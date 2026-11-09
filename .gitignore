@@ -1,0 +1,4 @@
+node_modules/
+idlebot.local.json
+*.sqlite
+*.sqlite-*

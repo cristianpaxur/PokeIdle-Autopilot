@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101713">
+  <title>IdleBot | Painel de caça</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" type="module"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a href="/" class="brand"><span class="mark" aria-hidden="true">◉</span> IdleBot</a>
+      <div class="connection"><span id="live-dot" class="dot" aria-hidden="true"></span><span id="live" role="status">Conectando</span></div>
+    </div>
+  </header>
+  <main class="shell">
+    <section class="hero" aria-labelledby="title">
+      <div>
+        <p class="eyebrow">POKEIDLE.IO <span> / </span> PAINEL LOCAL</p>
+        <h1 id="title">Central de caça<span>.</span></h1>
+        <p>Acompanhe as quatro contas, as capturas e as vendas do Mercado.</p>
+      </div>
+      <button id="start-all" class="primary" type="button">Abrir quatro perfis <span aria-hidden="true">↗</span></button>
+    </section>
+    <p id="feedback" class="feedback" role="status" hidden></p>
+
+    <dl class="kpis" aria-label="Resumo da operação">
+      <div><dt>Perfis caçando</dt><dd id="kpi-active">0 / 4</dd><small>Sessões em operação</small></div>
+      <div><dt>Capturas</dt><dd id="kpi-captures">0</dd><small id="kpi-shinies">0 shinies</small></div>
+      <div><dt>Estoque estimado</dt><dd id="kpi-stock">—</dd><small>Gemas · preços de referência</small></div>
+      <div><dt>Vendas líquidas</dt><dd id="kpi-sold">0</dd><small>Gemas · vendas registradas</small></div>
+    </dl>
+
+    <section class="section" aria-labelledby="profiles-heading">
+      <div class="section-heading"><h2 id="profiles-heading">Perfis</h2><span>01—04</span></div>
+      <div id="profiles" class="profiles"></div>
+    </section>
+
+    <section class="section log" aria-labelledby="capture-heading">
+      <div class="section-heading log-heading">
+        <h2 id="capture-heading">Capturas recentes</h2>
+        <label for="filter">Perfil
+          <select id="filter"><option value="">Todos</option><option value="1">01</option><option value="2">02</option><option value="3">03</option><option value="4">04</option></select>
+        </label>
+      </div>
+      <div class="table-wrap"><table>
+        <thead><tr><th scope="col">Pokémon</th><th scope="col">Perfil</th><th scope="col">Hora</th><th scope="col">Gemas estimadas</th><th scope="col">Mercado</th></tr></thead>
+        <tbody id="captures"><tr><td colspan="5">Aguardando as primeiras capturas.</td></tr></tbody>
+      </table></div>
+    </section>
+    <section class="section log" aria-labelledby="money-heading">
+      <div class="section-heading log-heading"><h2 id="money-heading">Mercado e saques</h2><span>REGISTRO LOCAL</span></div>
+      <div class="table-wrap"><table>
+        <thead><tr><th scope="col">Operação</th><th scope="col">Perfil</th><th scope="col">Hora</th><th scope="col">Gemas</th><th scope="col">Estado</th></tr></thead>
+        <tbody id="operations"><tr><td colspan="5">Aguardando as primeiras operações.</td></tr></tbody>
+      </table></div>
+    </section>
+  </main>
+  <footer class="shell"><span>IdleBot · execução local</span><span>Prévia da caça atualizada a cada 6 segundos</span></footer>
+</body>
+</html>
