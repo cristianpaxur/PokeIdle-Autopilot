@@ -5,14 +5,23 @@ export const GAME_URL = 'https://pokeidle.io/app';
 const GAME_ORIGIN = new URL(GAME_URL).origin;
 const GAME_SOCKET = 'wss://pokeidle.io/';
 const BUTTON_WAIT = 1800;
+const CAPTURE_WAIT = 4000;
 const click = (page, selector) => page.locator(selector).first().click({ timeout: BUTTON_WAIT });
+
+export async function acceptGameUpdate(page) {
+  const button = page.locator('#aviso-versao:visible #aviso-versao-btn:visible');
+  if (!(await button.isVisible())
+    || await page.locator('#confirmar:visible, #termos-aceite:visible').first().isVisible()) return false;
+  await button.click({ timeout: BUTTON_WAIT });
+  return true;
+}
 
 export async function clickCapture(page) {
   const ball = page.locator('#caidos-bolas .caidos-bola.on:visible');
   const target = page.locator('#caidos-lista .caido:not(.acabando):visible').first();
   if (!(await ball.isVisible()) || !(await target.isVisible())) return false;
   try {
-    await target.click({ timeout: 350 });
+    await target.click({ timeout: CAPTURE_WAIT });
     return true;
   } catch (error) {
     if (error.name === 'TimeoutError') return false;
@@ -68,7 +77,7 @@ function hookSocket({ key, origin, socketUrl }) {
     if (this.url === socketUrl && this.readyState === WebSocket.OPEN) connection = this;
     return original.call(this, payload);
   };
-  const allowed = new Set(['hunt.select', 'auto.set', 'shop.buy', 'market.historico',
+  const allowed = new Set(['hunt.select', 'centro.curar', 'auto.set', 'shop.buy', 'market.historico',
     'market.historicoGlobal', 'market.meus', 'orbs.painel']);
   Object.defineProperty(window, key, {
     value: (message) => {
@@ -84,10 +93,13 @@ export class GameBrowser {
   waiters = new Set();
   socket = null;
 
-  async open(profileDir, channel, onFrame, onDisconnect, onClose) {
+  async open(profileDir, channel, onFrame, onDisconnect, onClose, display) {
     this.context = await chromium.launchPersistentContext(profileDir, {
-      channel, headless: false, viewport: { width: 1320, height: 850 },
-      args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding'],
+      channel: channel === 'chromium' ? undefined : channel,
+      headless: false, viewport: display ? null : { width: 1320, height: 850 },
+      env: display ? { ...process.env, DISPLAY: display } : undefined,
+      args: ['--disable-background-timer-throttling', '--disable-renderer-backgrounding',
+        ...(display ? ['--start-maximized', '--disable-background-mode'] : [])],
     });
     this.context.on('close', onClose);
     await this.context.addInitScript(hookSocket, { key: this.key, origin: GAME_ORIGIN, socketUrl: GAME_SOCKET });

@@ -1,0 +1,32 @@
+services:
+  idlebot:
+    build: .
+    init: true
+    restart: unless-stopped
+    shm_size: 1gb
+    stop_grace_period: 25s
+    ports:
+      - "127.0.0.1:${IDLEBOT_PORT:-4097}:4096"
+    environment:
+      IDLEBOT_DOCKER: "1"
+      IDLEBOT_ORIGIN: "${IDLEBOT_ORIGIN:-http://127.0.0.1:4097}"
+      IDLEBOT_PASSWORD: "${IDLEBOT_PASSWORD:?Defina IDLEBOT_PASSWORD no arquivo .env.docker}"
+    volumes:
+      - ledger:/data
+      - profile1:/data/profiles/1
+      - profile2:/data/profiles/2
+      - profile3:/data/profiles/3
+      - profile4:/data/profiles/4
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://127.0.0.1:4096/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 15s
+      timeout: 4s
+      start_period: 20s
+      retries: 3
+
+volumes:
+  ledger:
+  profile1:
+  profile2:
+  profile3:
+  profile4:

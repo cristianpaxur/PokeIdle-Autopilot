@@ -1,6 +1,8 @@
 import assert from 'node:assert/strict';
 import { once } from 'node:events';
+import { get } from 'node:http';
 import test from 'node:test';
+import { WebSocket } from 'ws';
 import { createDashboard } from '../src/dashboard.mjs';
 
 test('the dashboard exposes state and denies control requests from outside its own page', async () => {
@@ -20,6 +22,73 @@ test('the dashboard exposes state and denies control requests from outside its o
     const local = await fetch(path, { method: 'POST', headers: { Origin: url, 'X-IdleBot': '1' } });
     assert.equal(local.status, 204);
     assert.equal((await fetch(`${url}/`)).status, 200);
+    assert.equal((await fetch(`${url}/mobile-qr.svg`)).status, 404);
+  } finally {
+    await dashboard.close();
+  }
+});
+
+test('serves the mobile QR code only on the authenticated HTTPS dashboard', async (t) => {
+  const origin = new URL('https://idlebot.example.ts.net:8443');
+  const password = 'docker-test-password';
+  const dashboard = createDashboard({
+    snapshot: () => ({ remote: true }),
+    preview: () => null,
+    command: async () => {},
+    remote: { origin, password, desktop: { close() {} } },
+  });
+  t.after(() => dashboard.close());
+  dashboard.server.listen(0, '127.0.0.1');
+  await once(dashboard.server, 'listening');
+  const port = dashboard.server.address().port;
+  const qrRequest = (headers = {}) => new Promise((resolve, reject) => {
+    get(`http://127.0.0.1:${port}/mobile-qr.svg`, { headers: { Host: origin.host, ...headers } }, resolve)
+      .on('error', reject);
+  });
+  const anonymous = await qrRequest();
+  anonymous.resume();
+  assert.equal(anonymous.statusCode, 401);
+  const authorization = `Basic ${Buffer.from(`idlebot:${password}`).toString('base64')}`;
+  const response = await qrRequest({ Authorization: authorization });
+  assert.equal(response.statusCode, 200);
+  assert.match(response.headers['content-type'], /^image\/svg\+xml/);
+  const chunks = [];
+  for await (const chunk of response) chunks.push(chunk);
+  assert.match(Buffer.concat(chunks).toString(), /^<svg[\s\S]*<path[\s\S]*<\/svg>$/);
+});
+
+test('the Docker dashboard protects both its HTTP API and WebSocket upgrades', async () => {
+  const origin = new URL('http://127.0.0.1:4097');
+  const password = 'docker-test-password';
+  const desktop = {
+    upgrade(_req, socket) { socket.end('HTTP/1.1 418 Test\r\nContent-Length: 0\r\n\r\n'); },
+    close() {},
+  };
+  const dashboard = createDashboard({
+    snapshot: () => ({ remote: true }),
+    preview: () => null,
+    command: async () => {},
+    remote: { origin, password, desktop },
+  });
+  dashboard.server.listen(0, '127.0.0.1');
+  await once(dashboard.server, 'listening');
+  origin.port = dashboard.server.address().port;
+  const url = origin.origin;
+  try {
+    const response = await fetch(`${url}/api/state`);
+    assert.equal(response.status, 401);
+    const login = await fetch(`${url}/api/state`, {
+      headers: { Authorization: `Basic ${Buffer.from(`idlebot:${password}`).toString('base64')}` },
+    });
+    assert.equal(login.status, 200);
+    const cookie = login.headers.get('set-cookie').split(';')[0];
+    const checkUpgrade = async (headers, status) => {
+      const ws = new WebSocket(url.replace('http', 'ws') + '/api/profiles/1/screen', { headers });
+      assert.match((await once(ws, 'error'))[0].message, new RegExp(String(status)));
+    };
+    await checkUpgrade({ Origin: origin.origin }, 403);
+    await checkUpgrade({ Origin: 'https://example.org', Cookie: cookie }, 403);
+    await checkUpgrade({ Origin: origin.origin, Cookie: cookie }, 418);
   } finally {
     await dashboard.close();
   }

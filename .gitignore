@@ -1,4 +1,6 @@
 node_modules/
 idlebot.local.json
+.env.docker
+.env.docker.*
 *.sqlite
 *.sqlite-*

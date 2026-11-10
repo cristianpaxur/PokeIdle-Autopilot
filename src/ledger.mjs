@@ -1,6 +1,9 @@
 import { DatabaseSync } from 'node:sqlite';
 import { netGems } from './policy.mjs';
 
+export const SALES_TARGET = 20;
+const nickKey = (nick) => String(nick ?? '').trim().toLowerCase();
+
 export class Ledger {
   constructor(file) {
     this.db = new DatabaseSync(file);
@@ -87,7 +90,7 @@ export class Ledger {
     const row = this.db.prepare(`SELECT captures.data FROM captures
       WHERE account = ? AND coalesce(checked_at, 0) <= ?
       AND NOT EXISTS (SELECT 1 FROM operations WHERE operations.account = captures.account
-        AND kind = 'listing' AND key = CAST(captures.id AS TEXT))
+        AND kind = 'listing' AND key = CAST(captures.id AS TEXT) AND state != 'returned')
       ORDER BY coalesce(checked_at, 0), captured_at LIMIT 1`).get(account, before);
     return row ? JSON.parse(row.data) : null;
   }
@@ -99,6 +102,10 @@ export class Ledger {
 
   begin(account, kind, key, data) {
     const now = Date.now();
+    if (kind === 'listing' && this.db.prepare(`UPDATE OR IGNORE operations
+      SET state = 'pending', data = ?, created_at = ?, updated_at = ?
+      WHERE account = ? AND kind = 'listing' AND key = ? AND state = 'returned'`)
+      .run(JSON.stringify(data), now, now, account, key).changes) return true;
     return Boolean(this.db.prepare('INSERT OR IGNORE INTO operations VALUES (?, ?, ?, ?, ?, ?, ?)')
       .run(account, kind, key, 'pending', JSON.stringify(data), now, now).changes);
   }
@@ -121,14 +128,50 @@ export class Ledger {
       AND kind = ? AND state IN ('pending', 'uncertain')`).get(account, kind));
   }
 
+  openListings(account) {
+    return this.db.prepare(`SELECT key, created_at AS time FROM operations WHERE account = ?
+      AND kind = 'listing' AND state IN ('pending', 'uncertain', 'confirmed') ORDER BY created_at`).all(account);
+  }
+
+  returnListing(account, key) {
+    this.db.prepare(`UPDATE operations SET state = 'returned', updated_at = ? WHERE account = ?
+      AND kind = 'listing' AND key = ? AND state IN ('pending', 'uncertain', 'confirmed')`)
+      .run(Date.now(), account, key);
+  }
+
+  mission(account) {
+    const counts = this.db.prepare(`SELECT count(*) FILTER (WHERE state = 'sold') AS sold,
+      count(*) FILTER (WHERE state IN ('pending', 'uncertain', 'confirmed')) AS open
+      FROM operations WHERE account = ? AND kind = 'listing'`).get(account);
+    return { ...counts, target: SALES_TARGET };
+  }
+
   addSale(account, sale) {
     if (sale.moeda !== 'orb' || sale.tipo !== 'pokemon') return;
+    if (sale.vendedor && nickKey(sale.vendedor) !== nickKey(account)) return;
+    const buyer = nickKey(sale.comprador);
+    if (buyer && this.accounts().some((nick) => nickKey(nick) === buyer)) return;
     const id = sale.id ?? sale.anuncioId ?? (sale.em && sale.pokemonId ? `${sale.em}:${sale.pokemonId}` : null);
     if (id == null) return;
     const net = Number.isSafeInteger(sale.liquido) ? sale.liquido : netGems(Number(sale.bruto));
     if (!Number.isSafeInteger(net) || net <= 0) return;
-    this.db.prepare('INSERT OR IGNORE INTO sales VALUES (?, ?, ?)')
-      .run(account, String(id), JSON.stringify({ id, net, time: sale.em, name: sale.descricao }));
+    const pokemonId = Number(sale.pokemonId ?? sale.ficha?.id);
+    const soldAt = Number(sale.em);
+    this.db.exec('BEGIN');
+    try {
+      this.db.prepare('INSERT OR IGNORE INTO sales VALUES (?, ?, ?)')
+        .run(account, String(id), JSON.stringify({ id, net, time: sale.em, name: sale.descricao }));
+      if (Number.isSafeInteger(pokemonId) && pokemonId > 0 && Number.isSafeInteger(soldAt)) {
+        this.db.prepare(`UPDATE operations SET state = 'sold', updated_at = ? WHERE account = ?
+          AND kind = 'listing' AND key = ? AND state IN ('pending', 'uncertain', 'confirmed', 'returned')
+          AND created_at <= ? AND json_extract(data, '$.gems') = ?`)
+          .run(Date.now(), account, String(pokemonId), soldAt, Number(sale.bruto));
+      }
+      this.db.exec('COMMIT');
+    } catch (error) {
+      this.db.exec('ROLLBACK');
+      throw error;
+    }
   }
 
   sales(account) {
@@ -144,7 +187,7 @@ export class Ledger {
     const stock = this.db.prepare(`SELECT coalesce(sum(json_extract(quote, '$.gems')), 0) AS stockGems
       FROM captures WHERE account = ? AND NOT EXISTS (SELECT 1 FROM operations
       WHERE operations.account = captures.account AND kind = 'listing'
-      AND key = CAST(captures.id AS TEXT) AND state IN ('confirmed', 'pending', 'uncertain'))`).get(account);
+      AND key = CAST(captures.id AS TEXT) AND state IN ('confirmed', 'pending', 'uncertain', 'sold'))`).get(account);
     const sold = this.db.prepare(`SELECT count(*) AS sold, coalesce(sum(json_extract(data, '$.net')), 0) AS soldGems
       FROM sales WHERE account = ?`).get(account);
     return { ...captures, ...stock, ...sold };

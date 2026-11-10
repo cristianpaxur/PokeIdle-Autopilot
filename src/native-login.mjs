@@ -2,6 +2,7 @@ import { spawn } from 'node:child_process';
 import { once } from 'node:events';
 import { existsSync, mkdirSync } from 'node:fs';
 import { join } from 'node:path';
+import { chromium } from 'playwright-core';
 import { GAME_URL } from './browser.mjs';
 
 export function nativeLoginCommand(channel, profileDir, roots = [
@@ -19,10 +20,17 @@ export function nativeLoginCommand(channel, profileDir, roots = [
   };
 }
 
-export async function openNativeLogin(channel, profileDir) {
-  const { executable, args } = nativeLoginCommand(channel, profileDir);
+export async function openNativeLogin(channel, profileDir, display) {
+  const { executable, args } = display ? {
+    executable: chromium.executablePath(),
+    args: [`--user-data-dir=${profileDir}`, '--no-sandbox', '--no-first-run',
+      '--disable-background-mode', '--start-maximized', '--new-window', GAME_URL],
+  } : nativeLoginCommand(channel, profileDir);
   mkdirSync(profileDir, { recursive: true });
-  const child = spawn(executable, args, { detached: true, stdio: 'ignore' });
+  const child = spawn(executable, args, {
+    detached: true, stdio: 'ignore',
+    env: display ? { ...process.env, DISPLAY: display } : undefined,
+  });
   await once(child, 'spawn');
   child.unref();
   return child;

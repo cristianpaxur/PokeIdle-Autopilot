@@ -1,5 +1,22 @@
 const ownNick = (name) => String(name ?? '').trim().toLowerCase();
 
+export function nextHunt(hunts, player, { pinned, ready, blocked = new Set(), lastHunt } = {}) {
+  if (player.boss?.arena || player.mistico || player.safari?.dentro || player.casa?.dentro) return null;
+  const unlocked = hunts.filter(({ slug, nivel }) => slug && Number.isFinite(nivel) && nivel <= player.level)
+    .sort((a, b) => a.nivel - b.nivel);
+  const current = hunts.find(({ slug }) => slug === (player.huntSlug || lastHunt));
+  const safe = unlocked.filter(({ slug }) => !blocked.has(slug));
+  let chosen;
+  if (pinned) chosen = unlocked.find(({ slug }) => slug === pinned);
+  else if (!current) chosen = safe[0];
+  else if (blocked.has(current.slug) || current.nivel > player.level) {
+    chosen = safe.findLast(({ nivel }) => nivel < current.nivel) ?? safe.find(({ nivel }) => nivel === current.nivel);
+  } else {
+    chosen = (ready && !player.noCentro && safe.find(({ nivel }) => nivel > current.nivel)) || current;
+  }
+  return chosen && (chosen.slug !== player.huntSlug || player.noCentro) ? chosen : null;
+}
+
 export function quote(capture, sales, ownAccounts, minSamples = 3) {
   if (!capture.speciesId || !capture.power || !capture.level) return null;
   const own = new Set(ownAccounts.map(ownNick));

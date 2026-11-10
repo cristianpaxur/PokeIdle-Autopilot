@@ -3,9 +3,10 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import test from 'node:test';
-import { quote, withdrawalAmount } from '../src/policy.mjs';
+import { nextHunt, quote, withdrawalAmount } from '../src/policy.mjs';
 import { Ledger } from '../src/ledger.mjs';
 import { GameState } from '../src/game-state.mjs';
+import { Session } from '../src/session.mjs';
 
 const target = { id: 14, speciesId: 25, name: 'Pikachu', level: 60, power: 4, shiny: false };
 
@@ -62,4 +63,70 @@ test('reconstructs the account from game frames and counts only confirmed captur
     { k: 'capturado', pokemon: { id: 14, speciesId: 25, nome: 'Pikachu', potencia: 4, level: 60 } },
   ] }), [target]);
   assert.deepEqual(game.consume({ t: 'shiny.captura', pokemon: { id: 44 } }), []);
+});
+
+test('advances one unlocked tier after a stable hunt and falls back from a dangerous route', () => {
+  const hunts = [
+    { slug: 'caterpie', nivel: 1 }, { slug: 'pidgey', nivel: 5 },
+    { slug: 'rattata', nivel: 10 }, { slug: 'locked', nivel: 50 },
+  ];
+  const player = { level: 12, huntSlug: 'caterpie' };
+  assert.equal(nextHunt(hunts, player, { ready: false }), null);
+  assert.equal(nextHunt(hunts, player, { ready: true }).slug, 'pidgey');
+  assert.equal(nextHunt(hunts, { ...player, level: 4 }, { ready: true }), null);
+  assert.equal(nextHunt(hunts, { ...player, huntSlug: 'rattata' }, {
+    blocked: new Set(['rattata']),
+  }).slug, 'pidgey');
+  assert.equal(nextHunt(hunts, { ...player, safari: { dentro: true } }, { ready: true }), null);
+  assert.equal(nextHunt(hunts, player, { pinned: 'caterpie', ready: true }), null);
+});
+
+test('uses game battle events and unlock timestamps to advance or recover the current route', () => {
+  const game = new GameState();
+  const start = 100_000;
+  game.consume({ t: 'welcome', estado: { level: 9, huntSlug: 'caterpie' } }, start);
+  const event = (ev, at) => game.consume({ t: 'batalha', ev }, at);
+  event(Array.from({ length: 12 }, () => ({ k: 'morte', quem: 'selvagem' })), start + 60_000);
+  event([{ k: 'ataque' }, { k: 'hunt', trocaLivreEm: start + 65_000 }], start + 61_000);
+  assert.equal(game.canSwitchHunt(start + 63_000), false);
+  assert.equal(game.canSwitchHunt(start + 66_000), true);
+  assert.equal(game.huntOptions(start + 66_000).ready, true);
+  event([{ k: 'morte', quem: 'jogador' }], start + 70_000);
+  assert.equal(game.huntOptions(start + 71_000).ready, false);
+  event([{ k: 'morte', quem: 'jogador' }], start + 80_000);
+  assert(game.huntOptions(start + 81_000).blocked.has('caterpie'));
+  assert(!game.huntOptions(start + 681_000).blocked.has('caterpie'));
+});
+
+test('heals a knocked-out team at the center before returning to its route', async () => {
+  const ledger = new Ledger(':memory:');
+  try {
+    const session = new Session({ id: 1, display: ':11', goldReserve: 10_000 }, {}, ledger, () => {});
+    const commands = [];
+    const pokemon = { id: 4, slot: 0, hp: 0, maxHp: 24 };
+    session.desired = true;
+    session.browser = {
+      page: { locator: () => ({ first() { return this; }, isVisible: async () => false }) },
+      socket: {},
+      send: async (message) => { commands.push(message); return true; },
+    };
+    session.frame({
+      t: 'welcome',
+      hunts: [{ slug: 'magikarp', nivel: 1 }],
+      estado: {
+        nick: 'Ash', level: 16, activeId: 4, huntSlug: 'magikarp',
+        noCentro: true, gold: 0, pokemons: [pokemon],
+      },
+    });
+    await session.tick();
+    assert.deepEqual(commands, [{ t: 'centro.curar' }]);
+    await session.tick();
+    assert.deepEqual(commands, [{ t: 'centro.curar' }]);
+
+    session.frame({ t: 'estado', estado: { pkMud: [{ ...pokemon, hp: 24 }] } });
+    await session.tick();
+    assert.deepEqual(commands, [{ t: 'centro.curar' }, { t: 'hunt.select', slug: 'magikarp' }]);
+  } finally {
+    ledger.close();
+  }
 });

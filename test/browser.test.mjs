@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { chromium } from 'playwright-core';
-import { clickCapture, prepareListing } from '../src/browser.mjs';
+import { acceptGameUpdate, clickCapture, prepareListing } from '../src/browser.mjs';
 
 test('the bot uses the regular throw button and skips expired targets', async () => {
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
@@ -16,6 +16,27 @@ test('the bot uses the regular throw button and skips expired targets', async ()
     assert.equal(await page.locator('body').getAttribute('data-hit'), 'current');
     await page.locator('.caidos-bola').evaluate((button) => button.remove());
     assert.equal(await clickCapture(page), false);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('waits for a visible capture target to become clickable', async () => {
+  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(`<div id="caidos-bolas"><button class="caidos-bola on">Bola</button></div>
+      <div id="caidos-lista">
+        <button class="caido" disabled onclick="document.body.dataset.thrown = 'yes'">Magikarp</button>
+      </div>`);
+    const [thrown] = await Promise.all([
+      clickCapture(page),
+      page.locator('.caido').evaluate((button) => {
+        setTimeout(() => { button.disabled = false; }, 750);
+      }),
+    ]);
+    assert.equal(thrown, true);
+    assert.equal(await page.locator('body').getAttribute('data-thrown'), 'yes');
   } finally {
     await browser.close();
   }
@@ -42,6 +63,23 @@ test('listing preparation selects the precise captured Pokémon and leaves final
     assert.equal(await page.locator('body').getAttribute('data-picked'), '13');
     assert.equal(await page.locator('#cm-preco').inputValue(), '210');
     assert.equal(await page.locator('body').getAttribute('data-sent'), null);
+  } finally {
+    await browser.close();
+  }
+});
+
+test('accepts a game update only after the confirmation dialog has closed', async () => {
+  const browser = await chromium.launch({ channel: 'msedge', headless: true });
+  try {
+    const page = await browser.newPage();
+    await page.setContent(`<div id="aviso-versao">
+      <button id="aviso-versao-btn" onclick="document.body.dataset.updated = 'yes'">Recarregar</button>
+      </div><div id="confirmar">Confirme a operação</div>`);
+    assert.equal(await acceptGameUpdate(page), false);
+    assert.equal(await page.locator('body').getAttribute('data-updated'), null);
+    await page.locator('#confirmar').evaluate((el) => { el.hidden = true; });
+    assert.equal(await acceptGameUpdate(page), true);
+    assert.equal(await page.locator('body').getAttribute('data-updated'), 'yes');
   } finally {
     await browser.close();
   }
