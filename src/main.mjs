@@ -3,21 +3,33 @@ import { join } from 'node:path';
 import { loadConfig } from './config.mjs';
 import { createDashboard } from './dashboard.mjs';
 import { Ledger } from './ledger.mjs';
+import { createMobileMonitor } from './mobile-monitor.mjs';
+import { startMobileTunnel } from './mobile-tunnel.mjs';
 import { RemoteDesktop } from './remote-desktop.mjs';
 import { Session } from './session.mjs';
 
 const config = loadConfig();
 mkdirSync(config.dataDir, { recursive: true });
 const ledger = new Ledger(join(config.dataDir, 'idlebot.sqlite'));
-const publish = () => dashboard.publish();
+const publish = () => {
+  mobile?.syncScreens();
+  dashboard.publish();
+};
 const sessions = config.profiles.map((profile) => new Session(profile, config, ledger, publish));
 const desktop = config.remote ? new RemoteDesktop() : null;
 const commands = new Map();
+const snapshot = () => ({ remote: Boolean(desktop), profiles: sessions.map((session) => ({
+  ...session.snapshot(), control: desktop?.state(session.config.id),
+})) });
+const mobile = desktop ? createMobileMonitor({ snapshot, desktop }) : null;
+let stopMobileTunnel;
+if (mobile) mobile.server.listen(0, '127.0.0.1', () => {
+  if (!shuttingDown) stopMobileTunnel = startMobileTunnel(mobile.server.address().port, mobile.setOrigin);
+});
 const dashboard = createDashboard({
   remote: desktop ? { ...config.remote, desktop } : undefined,
-  snapshot: () => ({ remote: Boolean(desktop), profiles: sessions.map((session) => ({
-    ...session.snapshot(), control: desktop?.state(session.config.id),
-  })) }),
+  snapshot,
+  mobileQr: mobile?.qr,
   preview: (id) => sessions[id - 1].preview,
   async command(id, action) {
     const session = sessions[id - 1];
@@ -64,7 +76,8 @@ async function shutdown() {
   if (shuttingDown) return;
   shuttingDown = true;
   clearInterval(pulse);
-  const closed = dashboard.close();
+  stopMobileTunnel?.();
+  const closed = Promise.all([dashboard.close(), mobile?.close()]);
   await Promise.allSettled([...commands.values()]);
   await Promise.allSettled(sessions.map((session) => session.stop()));
   await closed;

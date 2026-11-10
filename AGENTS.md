@@ -1,9 +1,9 @@
 # IdleBot
 
-Para um pedido de instalação no computador do usuário, siga o [guia de instalação](docs/instalacao.md). Use o script `scripts/install-windows.ps1` e confirme que o Docker deixou o serviço saudável. Trabalhe no Windows onde o IdleBot deve rodar.
+Para instalar no computador do usuário, execute `scripts/install-windows.ps1` no Windows onde o IdleBot deve rodar. Acompanhe o script até o painel ficar saudável e a página do QR abrir. O [guia de instalação](docs/instalacao.md) descreve o fluxo.
 
-- Para acesso pelo celular, use **Tailscale Serve** e passe o endereço HTTPS exibido pelo comando ao script com `-RemoteOrigin`. Preserve configurações de outros serviços no Tailscale.
-- A pessoa faz os logins do Tailscale e do PokeIdle.io e responde às verificações que os aplicativos exibirem. Continue a instalação depois de cada login necessário.
+- O instalador inicia o Docker, prepara o monitor pelo túnel e abre o QR. O celular escaneia o código e abre o monitor pelo navegador.
+- A pessoa entra em cada conta do PokeIdle.io e responde às confirmações de primeira execução que o Windows ou o Docker exibirem. Retome a instalação quando o sistema estiver pronto.
 - Guarde a senha do painel em `.env.docker`. Entregue o endereço e indique onde o usuário pode consultar a senha localmente. Mantenha senhas, perfis de navegador e bancos de dados fora do Git e do chat.
-- Abra o endereço HTTPS no PC e mostre **QR do celular**. Confirme com a pessoa se o painel abriu pelo 4G ou 5G. Se faltar acesso ao celular, descreva o ponto da instalação que foi verificado.
+- Para reabrir o código, use **QR do celular** no painel local. O QR dá acesso à visualização, portanto mantenha-o no computador do usuário. Se faltar acesso ao celular, verifique a resposta HTTPS do monitor e descreva o que foi testado.
 - Para desenvolvimento, rode `npm ci` e `npm test` com Node.js 24 ou mais recente. Os testes de navegador usam o Edge instalado.

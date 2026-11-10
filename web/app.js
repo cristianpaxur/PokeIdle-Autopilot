@@ -208,7 +208,7 @@ function renderTables() {
 function render(state) {
   remote = Boolean(state.remote);
   profiles = state.profiles;
-  byId('mobile-qr').hidden = !remote || location.protocol !== 'https:';
+  byId('mobile-qr').hidden = !remote;
   byId('mosaic').hidden = !remote;
   byId('profiles').classList.toggle('streaming', remote);
   byId('preview-note').textContent = remote ? 'Transmissão contínua das sessões' : 'Prévia da caça atualizada a cada 6 segundos';
@@ -233,12 +233,34 @@ function render(state) {
 }
 
 byId('filter').addEventListener('change', renderTables);
+let qrRequest;
+let qrUrl;
+async function loadMobileQr(signal) {
+  if (signal.aborted) return;
+  try {
+    const response = await fetch('/mobile-qr.svg', { signal });
+    if (!response.ok) throw new Error('QR indisponível');
+    const image = await response.blob();
+    if (signal.aborted) return;
+    qrUrl = URL.createObjectURL(image);
+    byId('mobile-code').src = qrUrl;
+    byId('mobile-code').hidden = false;
+    byId('mobile-qr-status').textContent = 'Escaneie com a câmera do celular para acompanhar a caça.';
+  } catch {
+    if (!signal.aborted) setTimeout(() => loadMobileQr(signal), 3000);
+  }
+}
 byId('mobile-qr').addEventListener('click', () => {
-  const link = byId('mobile-link');
-  link.href = location.origin;
-  link.textContent = location.origin;
-  byId('mobile-code').src = '/mobile-qr.svg';
+  qrRequest = new AbortController();
+  byId('mobile-qr-status').textContent = 'Preparando acesso ao celular…';
+  byId('mobile-code').hidden = true;
   byId('mobile-dialog').showModal();
+  void loadMobileQr(qrRequest.signal);
+});
+byId('mobile-dialog').addEventListener('close', () => {
+  qrRequest?.abort();
+  if (qrUrl) URL.revokeObjectURL(qrUrl);
+  qrUrl = undefined;
 });
 byId('mobile-close').addEventListener('click', () => byId('mobile-dialog').close());
 byId('mosaic').addEventListener('click', (event) => {

@@ -63,7 +63,6 @@ h1 { margin: 0; font-size: clamp(36px, 5.1vw, 68px); line-height: 1.05; letter-s
 #mobile-dialog::backdrop { background: rgb(0 0 0 / .75); }
 #mobile-dialog h2 { margin: 0; font-size: 20px; }
 #mobile-dialog img { display: block; width: min(240px, 100%); height: auto; margin: 0 auto; }
-#mobile-dialog a { color: var(--accent); overflow-wrap: anywhere; }
 .remote-header { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 4px 12px; flex-wrap: wrap; }
 .remote-header h2 { margin: 0; font-size: 20px; }
 .remote-header p { margin: 3px 0 0; color: var(--muted); font-size: 13px; }

@@ -63,9 +63,8 @@
   </main>
   <dialog id="mobile-dialog" aria-labelledby="mobile-title">
     <h2 id="mobile-title">IdleBot no celular</h2>
-    <p>Ative o Tailscale no celular e escaneie o código com a câmera.</p>
-    <img id="mobile-code" width="240" height="240" alt="QR code com o endereço do painel IdleBot">
-    <p><a id="mobile-link"></a></p>
+    <p id="mobile-qr-status" role="status">Preparando acesso ao celular…</p>
+    <img id="mobile-code" width="240" height="240" alt="QR code para acompanhar o IdleBot no celular" hidden>
     <button id="mobile-close" type="button">Fechar</button>
   </dialog>
   <dialog id="remote-dialog" aria-labelledby="remote-title">

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101713">
+  <title>IdleBot no celular</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/mobile.js" type="module"></script>
+</head>
+<body>
+  <main class="shell">
+    <div class="hero">
+      <div>
+        <h1>IdleBot <span>ao vivo</span></h1>
+        <p id="monitor-status" role="status">Conectando ao painel…</p>
+      </div>
+      <button id="monitor-screens" class="primary" type="button" aria-pressed="false" hidden>Ver telas ao vivo</button>
+    </div>
+    <section id="monitor-profiles" class="profiles streaming" aria-label="Progresso dos perfis"></section>
+  </main>
+  <template id="monitor-profile">
+    <article class="profile">
+      <div class="profile-top"><h3></h3><span class="status"></span></div>
+      <div class="view" hidden><small>Conectando transmissão…</small></div>
+      <div class="profile-info">
+        <strong class="monitor-sales"></strong>
+        <div class="profile-stat"></div>
+      </div>
+    </article>
+  </template>
+</body>
+</html>

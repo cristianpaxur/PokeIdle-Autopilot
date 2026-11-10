@@ -60,6 +60,7 @@ test('serves the mobile QR code only on the authenticated HTTPS dashboard', asyn
 test('the Docker dashboard protects both its HTTP API and WebSocket upgrades', async () => {
   const origin = new URL('http://127.0.0.1:4097');
   const password = 'docker-test-password';
+  let phoneQr = null;
   const desktop = {
     upgrade(_req, socket) { socket.end('HTTP/1.1 418 Test\r\nContent-Length: 0\r\n\r\n'); },
     close() {},
@@ -69,6 +70,7 @@ test('the Docker dashboard protects both its HTTP API and WebSocket upgrades', a
     preview: () => null,
     command: async () => {},
     remote: { origin, password, desktop },
+    mobileQr: () => phoneQr,
   });
   dashboard.server.listen(0, '127.0.0.1');
   await once(dashboard.server, 'listening');
@@ -82,6 +84,12 @@ test('the Docker dashboard protects both its HTTP API and WebSocket upgrades', a
     });
     assert.equal(login.status, 200);
     const cookie = login.headers.get('set-cookie').split(';')[0];
+    assert.equal((await fetch(`${url}/mobile-qr.svg`)).status, 401);
+    assert.equal((await fetch(`${url}/mobile-qr.svg`, { headers: { Cookie: cookie } })).status, 503);
+    phoneQr = '<svg>paired-monitor</svg>';
+    const qr = await fetch(`${url}/mobile-qr.svg`, { headers: { Cookie: cookie } });
+    assert.equal(qr.status, 200);
+    assert.equal(await qr.text(), phoneQr);
     const checkUpgrade = async (headers, status) => {
       const ws = new WebSocket(url.replace('http', 'ws') + '/api/profiles/1/screen', { headers });
       assert.match((await once(ws, 'error'))[0].message, new RegExp(String(status)));

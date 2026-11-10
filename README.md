@@ -38,7 +38,7 @@ A meta de cada perfil é de **20 Pokémon vendidos em Gemas**. O painel mostra v
 
 ## Instalação
 
-Com o **Docker Desktop** aberto no modo Linux, execute no PowerShell.
+Baixe e extraia o [ZIP do projeto](https://github.com/cristianpaxur/PokeIdle-Autopilot/archive/refs/heads/main.zip) e abra **Instalar IdleBot.cmd**. O instalador prepara o Docker e abre o QR code do celular. Pelo Git, use estes comandos no PowerShell.
 
 ```powershell
 git clone https://github.com/cristianpaxur/PokeIdle-Autopilot.git
@@ -50,17 +50,15 @@ Abra o [painel local](http://127.0.0.1:4097) e entre com o usuário `idlebot` e 
 
 **Quer que uma IA instale no seu Windows?** Envie o link deste repositório a uma IA com acesso ao computador e use este pedido.
 
-> Instale o IdleBot neste Windows seguindo o AGENTS.md e o guia de instalação. Configure o acesso pelo celular com Tailscale Serve, mostre o QR code no painel e me avise quando eu precisar fazer login.
+> Baixe este repositório, execute o instalador do IdleBot neste Windows e deixe o QR do celular aberto. Siga o AGENTS.md e acompanhe a instalação até o painel e o monitor responderem.
 
 O [guia de instalação](docs/instalacao.md) detalha os pré-requisitos, o primeiro acesso e a configuração remota. O [AGENTS.md](AGENTS.md) orienta a IA durante a instalação.
 
 ## Acompanhe pelo celular
 
-1. Conecte o PC e o celular à mesma rede privada do Tailscale e configure o endereço HTTPS com o [guia de instalação](docs/instalacao.md).
-2. Abra o painel no PC e clique em **QR do celular**.
-3. Escaneie com a câmera e entre no painel pelo navegador do celular. Você pode acompanhar pelo 4G ou 5G enquanto o PC, o Docker e o Tailscale estiverem ativos.
+Escaneie o QR que o instalador abre no PC. O monitor funciona no navegador do celular, inclusive pelo 4G ou 5G, enquanto o PC e o Docker estiverem ativos. Você pode acompanhar as vendas e abrir as transmissões da caça em modo de visualização.
 
-O QR code contém o endereço privado daquela instalação. A senha do painel é solicitada no navegador.
+Para rever o código, clique em **QR do celular**, no topo do painel do PC. Se o endereço temporário mudar, escaneie o QR atualizado.
 
 <details>
 <summary><strong>Configuração opcional por perfil</strong></summary>

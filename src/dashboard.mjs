@@ -1,9 +1,7 @@
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
-import { readFile } from 'node:fs/promises';
 import { createServer } from 'node:http';
-import { join } from 'node:path';
-import { qrcode } from 'qrcode-generator';
 import { rejectUpgrade } from './remote-desktop.mjs';
+import { qrSvg, serveAsset } from './web-assets.mjs';
 
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
@@ -14,17 +12,11 @@ const files = new Map([
 
 const digest = (value) => createHash('sha256').update(value).digest();
 
-export function createDashboard({ snapshot, preview, command, remote }) {
+export function createDashboard({ snapshot, preview, command, remote, mobileQr }) {
   const clients = new Set();
   const cookie = remote ? `idlebot_session=${randomBytes(32).toString('base64url')}` : '';
   const basic = remote ? digest(`Basic ${Buffer.from(`idlebot:${remote.password}`).toString('base64')}`) : null;
-  let mobileQr;
-  if (remote?.origin.protocol === 'https:') {
-    const code = qrcode(0, 'M');
-    code.addData(remote.origin.origin);
-    code.make();
-    mobileQr = code.createSvgTag(8);
-  }
+  const configuredQr = !mobileQr && remote?.origin.protocol === 'https:' ? qrSvg(remote.origin.origin) : null;
   const acceptsCookie = (req) => (req.headers.cookie ?? '').split(';').some((part) => part.trim() === cookie);
   const acceptsBasic = (req) => timingSafeEqual(digest(req.headers.authorization ?? ''), basic);
   const server = createServer(async (req, res) => {
@@ -45,8 +37,10 @@ export function createDashboard({ snapshot, preview, command, remote }) {
     const [pathname] = req.url.split('?');
     try {
       if (req.method === 'GET') {
-        if (pathname === '/mobile-qr.svg' && mobileQr) {
-          return res.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8' }).end(mobileQr);
+        if (pathname === '/mobile-qr.svg' && (mobileQr || configuredQr)) {
+          const qr = mobileQr?.() ?? configuredQr;
+          if (!qr) return res.writeHead(503).end();
+          return res.writeHead(200, { 'Content-Type': 'image/svg+xml; charset=utf-8' }).end(qr);
         }
         if (pathname === '/api/state') {
           return res.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify(snapshot()));
@@ -63,15 +57,7 @@ export function createDashboard({ snapshot, preview, command, remote }) {
           const buffer = preview(Number(image[1]));
           return buffer ? res.writeHead(200, { 'Content-Type': 'image/jpeg' }).end(buffer) : res.writeHead(404).end();
         }
-        const file = files.get(pathname);
-        if (file) {
-          const data = await readFile(new URL(`../web/${file[0]}`, import.meta.url));
-          return res.writeHead(200, { 'Content-Type': file[1] }).end(data);
-        }
-        if (remote && /^\/novnc\/(?:core|vendor)\/(?:[\w-]+\/)*[\w.-]+\.js$/.test(pathname)) {
-          const data = await readFile(join('/usr/share/novnc', pathname.slice('/novnc/'.length)));
-          return res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8', 'Cache-Control': 'private, max-age=3600' }).end(data);
-        }
+        if (await serveAsset(res, pathname, files, Boolean(remote))) return;
       }
       if (req.method === 'POST') {
         if (req.headers.origin !== origin || req.headers['x-idlebot'] !== '1') return res.writeHead(403).end();

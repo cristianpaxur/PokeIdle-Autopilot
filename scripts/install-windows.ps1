@@ -10,13 +10,32 @@ if ($RemoteOrigin) {
   $origin = $RemoteOrigin.GetLeftPart([System.UriPartial]::Authority)
 }
 
-if (!(Get-Command docker -ErrorAction SilentlyContinue)) {
-  throw 'Instale o Docker Desktop antes de executar este script.'
+function Find-Docker {
+  $command = Get-Command docker.exe -ErrorAction SilentlyContinue
+  if ($command) { return $command.Source }
+  foreach ($base in @("$env:LOCALAPPDATA\Programs\DockerDesktop", "$env:ProgramFiles\Docker\Docker")) {
+    $file = Join-Path $base 'resources\bin\docker.exe'
+    if (Test-Path -LiteralPath $file -PathType Leaf) { return $file }
+  }
+}
+
+$docker = Find-Docker
+if (!$docker) {
+  $winget = Get-Command winget.exe -ErrorAction SilentlyContinue
+  if (!$winget) { throw 'O Windows precisa do Instalador de Aplicativos (WinGet) para baixar o Docker Desktop.' }
+  & $winget.Source install --id Docker.DockerDesktop --exact --source winget --silent --accept-source-agreements --accept-package-agreements
+  if ($LASTEXITCODE -ne 0) { throw 'O WinGet nao concluiu a instalacao do Docker Desktop.' }
+  $docker = Find-Docker
+  if (!$docker) { throw 'O Docker Desktop foi instalado. Reinicie o Windows se o instalador solicitar e execute novamente.' }
 }
 if ($env:IDLEBOT_PASSWORD -or $env:IDLEBOT_ORIGIN -or $env:IDLEBOT_PORT) {
   throw 'Defina as variaveis IDLEBOT_PASSWORD, IDLEBOT_ORIGIN e IDLEBOT_PORT apenas em .env.docker.'
 }
-$engine = docker info --format '{{.OSType}}'
+$engine = & $docker info --format '{{.OSType}}' 2>$null
+if ($LASTEXITCODE -ne 0) {
+  & $docker desktop start --timeout 120
+  $engine = & $docker info --format '{{.OSType}}' 2>$null
+}
 if ($LASTEXITCODE -ne 0 -or $engine -ne 'linux') {
   throw 'Inicie o Docker Desktop no modo Linux e execute o script novamente.'
 }
@@ -49,10 +68,24 @@ try {
     }
   }
 
-  docker compose --env-file .env.docker up -d --build --wait --wait-timeout 180
+  & $docker compose --env-file .env.docker up -d --build --wait --wait-timeout 180
   if ($LASTEXITCODE -ne 0) { throw 'O Docker nao confirmou que o painel iniciou.' }
-  if ($origin) { Write-Output "Painel HTTPS: $origin" }
   Write-Output 'Entre no painel com idlebot e a senha em .env.docker.'
+  Write-Output 'Preparando o QR code do celular...'
+  $qr = (& $docker compose --env-file .env.docker exec -T idlebot node src/print-mobile-qr.mjs) -join "`n"
+  if ($LASTEXITCODE -ne 0 -or $qr -notmatch '^<svg') {
+    throw 'O painel iniciou. O acesso ao celular ainda esta conectando. Veja QR do celular no painel.'
+  }
+  $qrPage = Join-Path ([System.IO.Path]::GetTempPath()) 'IdleBot-QR-do-celular.html'
+  $page = @'
+<!doctype html><html lang="pt-BR"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>IdleBot no celular</title><style>
+body{background:#101713;color:#f2f7f0;font:17px system-ui;text-align:center;margin:10vh auto;padding:0 20px}
+h1{margin:0;color:#b0f883}svg{max-width:100%;height:auto;background:white;border-radius:8px}
+</style><h1>IdleBot no celular</h1><p>Escaneie com a c&acirc;mera para acompanhar a ca&ccedil;a e as vendas.</p>
+'@
+  [System.IO.File]::WriteAllText($qrPage, "$page`n$qr`n</html>")
+  Start-Process -FilePath $qrPage
 } finally {
   Pop-Location
 }
