@@ -19,7 +19,7 @@ test('one controller can connect after the bot drains and returning control revo
   const url = `ws://127.0.0.1:${server.address().port}/api/profiles/1/screen`;
   let finishPause;
   const pausing = new Promise((resolve) => { finishPause = resolve; });
-  const session = new Session({ id: 1 }, {}, { profileAccount: () => null }, () => {});
+  const session = new Session({ id: 1 }, {}, { profileAccount: () => null, mode: () => undefined }, () => {});
   session.desired = true;
   session.online = true;
   session.browser = { socket: {} };

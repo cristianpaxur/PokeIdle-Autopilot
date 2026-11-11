@@ -19,17 +19,37 @@ export class GameState {
   balls = [];
   items = [];
   pokemon = new Map();
+  inventoryAt = null;
+  shinyLooks = {};
+  shinyLooksOutland = {};
+  evolutionStones = {};
+  typeChart = {};
+  outlandItems = [];
   panel = null;
   hunt = null;
   huntLocks = new Map();
   switchAfter = 0;
+  lastFrameAt = null;
+  lastProgressAt = null;
 
   consume(message, now = Date.now()) {
+    this.lastFrameAt = now;
     if (message.t === 'welcome') {
+      this.lastProgressAt = null;
       this.market = message.mercado ?? null;
       this.hunts = message.hunts ?? [];
       this.balls = message.catalogoBolas ?? [];
       this.items = message.itensNossos ?? [];
+      this.shinyLooks = message.shinyLooks ?? {};
+      this.shinyLooksOutland = message.shinyLooksOutland ?? {};
+      this.evolutionStones = message.pedrasEvolucao ?? {};
+      this.typeChart = message.tabelaTipos ?? {};
+      this.outlandItems = [
+        this.items.find(({ name }) => name === 'Bronze Boss Token')?.id ?? 70000,
+        message.casas?.fragmento?.itemId ?? 70011,
+        message.shinyStone?.fragmentoId ?? 70012,
+        message.bicicletas?.fragmento?.itemId ?? 70013,
+      ].filter((id) => Number.isSafeInteger(id) && id > 0);
       this.panel = null;
       this.updatePlayer(message.estado, true, now);
     }
@@ -42,16 +62,22 @@ export class GameState {
 
   updatePlayer(delta, reset, now) {
     if (!delta) return;
+    const previousXp = this.player?.xp;
+    const previousLevel = this.player?.level;
     const { cheio, pokemons, pkMud, pkFora, dexMud, dexFora, pokedex, ...fields } = delta;
     if (reset || cheio || !this.player) {
       this.player = fields;
       this.pokemon.clear();
+      this.inventoryAt = null;
     } else {
       Object.assign(this.player, fields);
     }
     if (Array.isArray(pokemons)) this.pokemon = new Map(pokemons.map((pokemon) => [Number(pokemon.id), pokemon]));
     for (const pokemon of pkMud ?? []) this.pokemon.set(Number(pokemon.id), pokemon);
     for (const id of pkFora ?? []) this.pokemon.delete(Number(id));
+    if (Array.isArray(pokemons) || cheio) this.inventoryAt = now;
+    if (!reset && (this.player.xp > previousXp || this.player.level > previousLevel)) this.lastProgressAt = now;
+    if (this.inventoryAt !== null && (pkMud?.length || pkFora?.length || fields.automation)) this.inventoryAt = now;
     const slug = this.player.huntSlug;
     if (slug && this.hunt?.slug !== slug) {
       this.hunt = { slug, startedAt: now, kills: 0, lastKillAt: now, faints: [], fightUntil: 0 };
@@ -73,12 +99,40 @@ export class GameState {
     if (event.quem === 'selvagem') {
       hunt.kills++;
       hunt.lastKillAt = now;
+      this.lastProgressAt = now;
       return;
     }
     if (event.quem) {
       hunt.faints = [...hunt.faints.filter((at) => now - at < 90_000), now];
       if (hunt.faints.length >= 2) this.huntLocks.set(hunt.slug, now + 600_000);
     }
+  }
+
+  farmEvents(events) {
+    const species = this.hunts.find(({ slug }) => slug === this.player?.huntSlug)?.especies ?? [];
+    const outlandItems = new Set(this.outlandItems);
+    const stats = { kills: 0, drops: 0, encounters: 0, balls: 0, supplyGold: 0, faints: 0 };
+    for (const event of events) {
+      if (event.k === 'morte' && event.quem === 'selvagem') {
+        stats.kills++;
+        const id = Number(event.pokeId ?? event.speciesId)
+          || species.find(({ nome }) => nome && nome === event.nome)?.pokeId;
+        if (this.shinyLooks[id] != null) stats.encounters++;
+        for (const drop of event.drops ?? []) {
+          if (outlandItems.has(Number(drop.itemId))) stats.drops += Math.max(0, Math.floor(Number(drop.qtd ?? 1) || 0));
+        }
+      } else if (event.k === 'morte' && event.quem) {
+        stats.faints++;
+      }
+      if (event.k === 'bola') {
+        stats.balls++;
+        stats.supplyGold += this.balls.find(({ id }) => id === Number(event.ballId))?.priceGold ?? 0;
+      }
+      if (event.k === 'cura' || event.k === 'revive') {
+        stats.supplyGold += this.items.find(({ id }) => id === Number(event.itemId))?.npcPrice ?? 0;
+      }
+    }
+    return stats;
   }
 
   canSwitchHunt(now) {

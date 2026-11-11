@@ -2,7 +2,7 @@
 
 [Baixe o ZIP do projeto](https://github.com/cristianpaxur/PokeIdle-Autopilot/archive/refs/heads/main.zip), extraia a pasta e abra **Instalar IdleBot.cmd**. O instalador inicia o Docker Desktop, baixa o que for necessário e abre o QR code no PC quando o monitor estiver disponível.
 
-Escaneie com a câmera do celular. O monitor abre no navegador, inclusive pelo 4G ou 5G. Ele mostra as capturas, o progresso das vendas e as transmissões dos perfis que estiverem caçando. As telas ao vivo ficam no botão **Ver telas ao vivo**.
+Escaneie com a câmera do celular. O monitor abre no navegador, inclusive pelo 4G ou 5G. Ele mostra os avisos, as métricas da fase de caça e os anúncios em aberto por perfil. Quando a transmissão estiver disponível, ela aparece abaixo dos dados do perfil.
 
 ## Pedir a instalação a uma IA
 

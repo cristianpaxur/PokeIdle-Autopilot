@@ -1,13 +1,14 @@
 <h1 align="center">PokeIdle Autopilot</h1>
 
 <p align="center">
-  <strong>Caça, captura e vendas no PokeIdle.io para até quatro contas próprias.</strong><br>
+  <strong>Automatize a caça e as vendas no PokeIdle.io em até quatro contas próprias.</strong><br>
   Windows e Docker · Painel em português · Monitoramento pelo celular
 </p>
 
 <p align="center">
   <a href="#instalação">Instalar</a> ·
-  <a href="#acompanhe-pelo-celular">Acessar pelo celular</a> ·
+  <a href="#modos-de-caça">Modos de caça</a> ·
+  <a href="#monitor-no-celular">Monitor no celular</a> ·
   <a href="docs/pokeidle.md">Guia do jogo</a>
 </p>
 
@@ -15,30 +16,19 @@
   <img src="docs/imagens/caca-pokeidle.gif" width="800" alt="Charmander se movimentando e enfrentando Metapod durante uma caça no PokeIdle.io">
 </p>
 
-<p align="center"><sub>Charmander em uma caça na rota de Metapod no PokeIdle.io.</sub></p>
-
-O **IdleBot** acompanha as sessões do jogo em um único painel. Depois do primeiro login, cada perfil caça, repõe suprimentos e tenta capturar Pokémon. Quando encontra um Pokémon elegível, consulta vendas comparáveis e pode anunciá-lo no Mercado da Comunidade.
-
-A meta de cada perfil é de **20 Pokémon vendidos em Gemas**. O painel mostra vendas confirmadas e anúncios em andamento separadamente. Ao confirmar a 20ª venda no extrato do jogo, o robô encerra a sessão e mantém o progresso salvo para a próxima abertura.
-
-## Da caça à venda
-
-| Etapa | O que o IdleBot faz |
-| --- | --- |
-| 🗺️ **Caça** | Avança entre rotas liberadas, recua quando o time sofre desmaios e usa as opções de cura do jogo. |
-| 🔴 **Captura** | Usa o botão comum de arremesso, disponível em contas gratuitas. Registra as capturas confirmadas pelo servidor. |
-| 💎 **Mercado** | Estima preços com base em pelo menos três vendas comparáveis. Protege iniciais, Pokémon da equipe e Pokémon marcados na Coleção. |
-| 📊 **Acompanhamento** | Mostra capturas, anúncios, vendas e a meta por perfil. No Docker, **Ver 4 telas** abre as transmissões lado a lado. |
-
-<p align="center">
-  <img src="docs/imagens/painel-idlebot.png" width="960" alt="Painel do IdleBot com resumo da operação, transmissões e progresso de vendas por perfil">
-</p>
-
-<p align="center"><sub>Painel em modo Docker, com os perfis identificados pelo número.</sub></p>
-
 ## Instalação
 
-Baixe e extraia o [ZIP do projeto](https://github.com/cristianpaxur/PokeIdle-Autopilot/archive/refs/heads/main.zip) e abra **Instalar IdleBot.cmd**. O instalador prepara o Docker e abre o QR code do celular. Pelo Git, use estes comandos no PowerShell.
+1. Baixe e extraia o [ZIP do projeto](https://github.com/cristianpaxur/PokeIdle-Autopilot/archive/refs/heads/main.zip) no Windows.
+2. Abra **Instalar IdleBot.cmd**. O instalador prepara o Docker Desktop e abre o QR do monitor quando ele estiver disponível.
+3. Abra o [painel local](http://127.0.0.1:4097) com o usuário `idlebot` e a senha gerada no arquivo `.env.docker`, na pasta do projeto.
+4. Em cada perfil que quiser usar, clique em **Assumir controle**, entre na sua conta do PokeIdle.io e clique em **Devolver ao robô** quando o jogo carregar.
+
+Se o Windows ou o Docker pedir uma confirmação ou reinício, conclua a etapa e execute o instalador novamente. O [guia de instalação](docs/instalacao.md) também explica como pedir a instalação a uma IA com acesso ao PC.
+
+<details>
+<summary><strong>Instalar ou atualizar pelo Git</strong></summary>
+
+No PowerShell, clone o repositório e execute o instalador.
 
 ```powershell
 git clone https://github.com/cristianpaxur/PokeIdle-Autopilot.git
@@ -46,19 +36,41 @@ cd PokeIdle-Autopilot
 .\scripts\install-windows.ps1
 ```
 
-Abra o [painel local](http://127.0.0.1:4097) e entre com o usuário `idlebot` e a senha gerada no arquivo `.env.docker`. No primeiro acesso de cada perfil, clique em **Assumir controle**, faça o login no PokeIdle.io e clique em **Devolver ao robô** quando o jogo carregar.
+Para atualizar uma instalação feita pelo Git, execute na pasta do repositório.
 
-**Quer que uma IA instale no seu Windows?** Envie o link deste repositório a uma IA com acesso ao computador e use este pedido.
+```powershell
+git pull --ff-only
+.\scripts\install-windows.ps1
+```
 
-> Baixe este repositório, execute o instalador do IdleBot neste Windows e deixe o QR do celular aberto. Siga o AGENTS.md e acompanhe a instalação até o painel e o monitor responderem.
+O instalador reconstrói o serviço Docker. As sessões de login e o histórico ficam nos volumes do Docker.
 
-O [guia de instalação](docs/instalacao.md) detalha os pré-requisitos, o primeiro acesso e a configuração remota. O [AGENTS.md](AGENTS.md) orienta a IA durante a instalação.
+</details>
 
-## Acompanhe pelo celular
+## Modos de caça
 
-Escaneie o QR que o instalador abre no PC. O monitor funciona no navegador do celular, inclusive pelo 4G ou 5G, enquanto o PC e o Docker estiverem ativos. Você pode acompanhar as vendas e abrir as transmissões da caça em modo de visualização.
+Escolha o **Modo de caça** em cada perfil. O painel salva a escolha entre sessões.
 
-Para rever o código, clique em **QR do celular**, no topo do painel do PC. Se o endereço temporário mudar, escaneie o QR atualizado.
+| Modo | O que o IdleBot faz |
+| --- | --- |
+| **Progressão e Outland** | Compara rotas liberadas pelo XP líquido do treinador por hora, treina um Pokémon principal e passa para a Outland quando o treinador chega ao nível 150. Na Outland, coleta tokens e fragmentos para venda. |
+| **Shiny** | Caça em rotas comuns com espécies que têm forma shiny, repõe Poké Bolas e registra as capturas confirmadas pelo jogo. Pode anunciar os shinies que o bot capturou. |
+
+O bot usa a mediana de pelo menos três vendas comparáveis para cotar os anúncios em Gemas. **Gemas líquidas/h** divide o valor das vendas confirmadas após a comissão pelo tempo medido de caça. As métricas de caça começam a acumular dados com esta versão. [Regras de venda e cálculo das métricas](docs/pokeidle.md#como-o-rendimento-é-medido)
+
+## Painel
+
+- **Caça** mostra a rota, o estado e a tela de cada perfil. Alterne entre **24 h** e **7 dias** para acompanhar tempo de caça, drops, encontros e vendas. Na progressão, abra **XP das hunts** para comparar rotas. Consulte **Atenção** quando um perfil precisar de ação ou estiver tentando se recuperar. No Docker, **Ver 4 telas** abre o mosaico.
+- **Meus Pokémon** reúne os Pokémon da equipe, do Depot e da Coleção por perfil. Busque por nome, apelido ou ID e abra a ficha de um exemplar para ver seus atributos.
+- **Mercado** consulta os anúncios ativos de itens e Pokémon, com filtros de busca e moeda e preços por unidade em Coins e Gemas. Deixe pelo menos um perfil conectado ao jogo sob controle do robô para consultar.
+
+## Monitor no celular
+
+Escaneie o QR que o instalador abre no PC. Pelo navegador do celular, acompanhe as métricas de cada perfil, os avisos e as transmissões disponíveis em modo somente leitura. O monitor funciona pelo Wi-Fi, 4G ou 5G enquanto o PC e o Docker estiverem ativos.
+
+Clique em **QR do celular** no painel do PC para exibir o código novamente. Se o endereço temporário mudar, escaneie o código atualizado. Guarde o QR para uso próprio, pois ele dá acesso ao monitor.
+
+## Configuração e desenvolvimento
 
 <details>
 <summary><strong>Configuração opcional por perfil</strong></summary>
@@ -72,10 +84,13 @@ Crie `idlebot.local.json` na raiz do projeto. O array `profiles` corresponde aos
   "profiles": [
     {
       "autoStart": false,
+      "mode": "farm",
       "hunt": "",
       "goldReserve": 10000,
       "maxListingFee": 100000,
       "marketEnabled": true,
+      "minListingGems": 1,
+      "repriceAfterHours": 0,
       "withdrawal": {
         "enabled": false,
         "wallet": "",
@@ -88,9 +103,12 @@ Crie `idlebot.local.json` na raiz do projeto. O array `profiles` corresponde aos
 }
 ```
 
-- Com `hunt` vazio, o IdleBot progride entre rotas. Informe o slug da rota para fixá-la.
+- Use `mode: "farm"` para progressão e Outland ou `mode: "shiny"` para captura. O padrão é `farm`. A escolha salva no painel tem prioridade.
+- Informe em `hunt` o slug de uma rota preferida. Ela precisa estar liberada e servir à fase atual.
 - `goldReserve` protege uma reserva de ouro. `maxListingFee` limita o custo de estadia de cada anúncio.
-- Com `marketEnabled: false`, o perfil deixa de criar anúncios. O saque exige ativação explícita e o endereço público de uma carteira Solana.
+- Com `marketEnabled: false`, o perfil deixa de criar anúncios. Para ativar saques, use `withdrawal.enabled` e informe o endereço público de uma carteira Solana.
+- `minListingGems` define o preço bruto mínimo, em Gemas, por unidade. O mínimo do próprio jogo continua valendo.
+- `repriceAfterHours` define a idade mínima para revisar um anúncio do bot. O valor `0` desativa a retirada de anúncios ativos. Com a revisão ativa, o bot só solicita a retirada se a cotação cair pelo menos 10%, respeitar o preço mínimo e couber na reserva de ouro. A republicação aguarda a devolução confirmada pelo jogo.
 
 No Docker, copie o arquivo para o volume do serviço e reinicie para aplicar.
 
@@ -102,7 +120,7 @@ docker compose --env-file .env.docker restart idlebot
 </details>
 
 <details>
-<summary><strong>Rodar sem Docker</strong></summary>
+<summary><strong>Rodar sem Docker e executar os testes</strong></summary>
 
 Com Node.js 24 ou mais recente e Microsoft Edge instalado, execute os comandos abaixo. A configuração aceita também o canal `chrome`.
 
@@ -119,6 +137,6 @@ Para rodar os testes, use `npm test`. Os testes de navegador usam o Microsoft Ed
 
 ## Jogo e créditos
 
-PokeIdle Autopilot é um projeto comunitário independente para contas próprias. Os [termos do PokeIdle.io](https://pokeidle.io/terms) permitem automação dentro dos limites do jogo. As vendas dependem de compras de outros jogadores no Mercado da Comunidade.
+PokeIdle Autopilot é um projeto comunitário independente para contas próprias. As vendas dependem de compras de outros jogadores no Mercado da Comunidade. [Termos do PokeIdle.io](https://pokeidle.io/terms)
 
 A animação mostra uma sessão no [PokeIdle.io](https://pokeidle.io/). A arte exibida no jogo pertence aos respectivos titulares.

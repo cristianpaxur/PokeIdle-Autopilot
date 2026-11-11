@@ -8,25 +8,32 @@
   <link rel="stylesheet" href="/style.css">
   <script src="/mobile.js" type="module"></script>
 </head>
-<body>
+<body class="operations monitor">
   <main class="shell">
     <div class="hero">
       <div>
-        <h1>IdleBot <span>ao vivo</span></h1>
+        <h1>IdleBot ao vivo</h1>
         <p id="monitor-status" role="status">Conectando ao painel…</p>
       </div>
-      <button id="monitor-screens" class="primary" type="button" aria-pressed="false" hidden>Ver telas ao vivo</button>
+    </div>
+    <section class="attention-panel" aria-labelledby="monitor-attention-heading">
+      <h2 id="monitor-attention-heading">Atenção</h2>
+      <ul id="monitor-attention"><li class="no-attention">Aguardando dados dos perfis.</li></ul>
+    </section>
+    <div class="operation-toolbar">
+      <h2>Perfis</h2>
+      <label for="monitor-period">Período <select id="monitor-period"><option value="today">24 h</option><option value="week">7 dias</option></select></label>
     </div>
     <section id="monitor-profiles" class="profiles streaming" aria-label="Progresso dos perfis"></section>
   </main>
   <template id="monitor-profile">
     <article class="profile">
       <div class="profile-top"><h3></h3><span class="status"></span></div>
-      <div class="view" hidden><small>Conectando transmissão…</small></div>
       <div class="profile-info">
-        <strong class="monitor-sales"></strong>
-        <div class="profile-stat"></div>
+        <div class="profile-route"><strong></strong><small></small></div>
+        <div class="profile-stat phase-stats"></div>
       </div>
+      <div class="view" hidden><small>Transmissão ao vivo</small></div>
     </article>
   </template>
 </body>

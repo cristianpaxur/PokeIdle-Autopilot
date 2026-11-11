@@ -6,10 +6,11 @@ import { WebSocket } from 'ws';
 import { createDashboard } from '../src/dashboard.mjs';
 
 test('the dashboard exposes state and denies control requests from outside its own page', async () => {
+  const commands = [];
   const dashboard = createDashboard({
     snapshot: () => ({ profiles: [{ id: 1, status: 'offline' }] }),
     preview: () => null,
-    command: async () => {},
+    command: async (...args) => { commands.push(args); },
   });
   dashboard.server.listen(0, '127.0.0.1');
   await once(dashboard.server, 'listening');
@@ -21,6 +22,11 @@ test('the dashboard exposes state and denies control requests from outside its o
     assert.equal(foreign.status, 403);
     const local = await fetch(path, { method: 'POST', headers: { Origin: url, 'X-IdleBot': '1' } });
     assert.equal(local.status, 204);
+    const mode = await fetch(`${url}/api/profiles/1/mode/shiny`, {
+      method: 'POST', headers: { Origin: url, 'X-IdleBot': '1' },
+    });
+    assert.equal(mode.status, 204);
+    assert.deepEqual(commands, [[1, 'start'], [1, 'mode', 'shiny']]);
     assert.equal((await fetch(`${url}/`)).status, 200);
     assert.equal((await fetch(`${url}/mobile-qr.svg`)).status, 404);
   } finally {

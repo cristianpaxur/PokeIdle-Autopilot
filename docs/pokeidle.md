@@ -1,4 +1,4 @@
-# PokeIdle.io e a meta de 20 vendas
+# PokeIdle.io e o rendimento em Gemas
 
 Levantamento do cliente público 1.414.1, da Pokepédia integrada e dos Termos de Uso consultados em 9 de novembro de 2026. A Wiki fica no menu do jogo e reúne as regras detalhadas. Seus números variam com a versão e com os dados que o servidor envia. [Jogo e Pokepédia](https://pokeidle.io/app) · [Termos de Uso](https://pokeidle.io/terms)
 
@@ -6,20 +6,29 @@ Levantamento do cliente público 1.414.1, da Pokepédia integrada e dos Termos d
 
 | Etapa | Como funciona no jogo | Como o IdleBot usa |
 | --- | --- | --- |
-| Abrir uma rota | O nível do treinador libera as hunts. O Hunt Analyser estima XP e ouro e mostra tipos, fraquezas e drops. A luta progride enquanto a sessão está aberta. | Começa em uma rota liberada, progride depois de observar abates consistentes e recua quando ocorrem desmaios frequentes. Aceita uma rota fixa por perfil. |
+| Abrir uma rota | O nível do treinador libera as hunts. O Hunt Analyser estima XP e ouro e mostra tipos, fraquezas e drops. A luta progride enquanto a sessão está aberta. | Treina o Pokémon principal até liberar a Outland no nível 150. Na progressão, prioriza hunts liberadas e seguras com vantagem de tipo, inclusive de nível menor. Se nenhuma estiver disponível, usa as demais rotas seguras. O modo Shiny usa as rotas comuns que têm espécies com forma shiny. |
 | Manter a equipe | Um Pokémon ativo luta por vez. Se a equipe cair, o Centro Pokémon pode curá-la. Consumíveis e automações nativas ajudam a voltar à hunt. | Usa cura e retorno nativos e repõe suprimentos compráveis com ouro acima da reserva. |
-| Capturar | O corpo permanece disponível por tempo limitado e aceita uma tentativa. Bola e estágio da espécie influenciam a chance. O nível da captura pode ser limitado pelo teto da espécie. | Usa o arremesso comum e grava o identificador informado pelo servidor quando a captura é confirmada. |
+| Capturar | O corpo permanece disponível por tempo limitado e aceita uma tentativa. Bola e estágio da espécie influenciam a chance. O nível da captura pode ser limitado pelo teto da espécie. | No modo Shiny, usa a captura do jogo e grava o identificador informado pelo servidor quando a captura é confirmada. |
 | Selecionar | A faixa padrão do Mercado exige nível 50 e nota 3,5. Shiny, P5, lendários e míticos têm exceções. A tela também verifica restrições como skin equipada e XP Share. | Avalia capturas registradas fora da equipe e preserva iniciais e Coleção. A tela nativa confirma a elegibilidade. |
-| Cotar e publicar | A Tabela de preços registra compras concluídas, com filtros por tipo, moeda e características. Os Pokémon ficam sob custódia do Mercado durante o anúncio, com custo em ouro por dia. | Consulta até três páginas em Gemas. Exige três comparáveis distintos de espécie, shiny, potência, nível e, quando disponíveis, qualidade e IV. Publica pela mediana no prazo mínimo, dentro do teto de taxa e da reserva de ouro. |
-| Vender | O comprador é outro jogador. A venda aparece no extrato pessoal com data e preço. Cancelamento e expiração podem devolver o Pokémon. | Cruza o extrato com os anúncios do próprio bot. Registra cada Pokémon uma vez, reconcilia anúncios em aberto e libera uma vaga quando o Pokémon voltou ao inventário. |
+| Cotar e publicar | A Tabela de preços registra compras concluídas, com filtros por tipo, moeda e características. Os Pokémon ficam sob custódia do Mercado durante o anúncio, com custo em ouro por dia. | Na Outland, cota Bronze Boss Token e fragmentos de Chave, Bicicleta e Shiny Stone e anuncia uma unidade por vez. No modo Shiny, cota shinies capturados pelo bot. Usa a mediana de pelo menos três vendas comparáveis. |
+| Vender | O comprador é outro jogador. A venda aparece no extrato pessoal com data e preço. Cancelamento e expiração podem devolver o produto. | Cruza o extrato com os anúncios do bot e usa o valor líquido de vendas confirmadas para calcular o rendimento. |
 
 Fontes para as etapas acima. [Pokepédia integrada](https://pokeidle.io/pokepedia.mjs) · [Cliente do jogo](https://pokeidle.io/app.js?v=1.414.1) · [Página oficial](https://pokeidle.io/)
 
-## Como a meta é medida
+## Como o rendimento é medido
 
-- Cada conta tem **20 vendas confirmadas em Gemas**. Uma venda conta quando o extrato de vendas da conta confirma o Pokémon e o preço de um anúncio registrado pelo IdleBot. Vendas de itens, em Coins, entre contas vinculadas ou sem registro de anúncio do bot ficam fora da meta.
-- O bot consulta o extrato ao reconectar e durante a caça. Anúncios pendentes, incertos ou publicados ocupam vagas até o jogo confirmar a venda ou o retorno do Pokémon. A lista do jogo também informa quantos anúncios estão ocupando a vitrine.
-- Quando os anúncios em aberto já cobrem as vendas restantes, o bot poupa Poké Bolas e acompanha o extrato. Ele pode voltar a capturar se uma vaga for liberada. Na 20ª venda registrada, fecha a sessão. O banco local preserva o progresso e o status de conclusão.
+- **Gemas líquidas/h** divide o valor após a comissão de anúncios da estratégia vendidos em Gemas pelo tempo acumulado de caça da conta, incluindo a progressão e o modo Shiny. A medição começa com esta versão e exclui tempo pausado, desconectado ou sob controle manual.
+- O bot consulta o extrato ao reconectar e durante a caça. Vendas em Coins, entre contas vinculadas ou sem correspondência com um anúncio do bot ficam fora da taxa. O banco local guarda o tempo de caça e as vendas entre reinícios.
+
+O painel usa as medições da fase ativa nas últimas 24 horas ou sete dias, agrupadas por hora. Na Outland, conta os tokens e fragmentos confirmados em combate. No Shiny, conta como encontro elegível cada selvagem derrotado cuja espécie tenha uma forma shiny. O custo de suprimentos usa as bolas, poções e revives consumidos e seus preços de referência em ouro. Esses indicadores passam a acumular dados com a atualização.
+
+O bot compara as rotas Shiny depois de pelo menos seis minutos de caça por rota. Na Outland, testa tiers liberados e compara drops depois de pelo menos vinte minutos por rota. Desmaios e consumo de suprimentos reduzem a pontuação de uma rota. Quando uma conta fica três minutos sem abates ou progresso de XP, o bot tenta retomar a rota, escolher uma alternativa segura e, se necessário, recarregar a sessão.
+
+## Comparação de XP na progressão
+
+O bot testa hunts liberadas com vantagem de tipo em janelas de 90 segundos. Compara o ganho líquido de XP do treinador por hora para acelerar a liberação da Outland e registra também o XP do Pokémon principal. Perdas de XP e tempo no Centro após desmaios entram na conta. As rotas bloqueadas por desmaios frequentes saem da seleção.
+
+Depois de testar até três candidatas, permanece cinco minutos na melhor medida antes de explorar outras. Reutiliza medições recentes de até 30 minutos, com o mesmo Pokémon e configuração e nível semelhante. Pausas, desconexões e controle manual encerram a janela em andamento. O painel mostra as observações em **XP das hunts**, e o banco local guarda as janelas concluídas para os próximos reinícios.
 - Sessões novas precisam de login e configuração inicial. O jogo também pode exigir reautenticação ou aceite de termos. Disponibilidade de compradores, comparáveis, ouro e Pokémon elegíveis determina o ritmo de venda. Com `marketEnabled: false`, o perfil deixa de criar anúncios.
 
 Os Termos permitem automação na caça e no Mercado dentro das mesmas regras do jogo, inclusive os limites de contas, de frequência e de negociação. [Termos de Uso](https://pokeidle.io/terms)

@@ -39,12 +39,16 @@ export function loadConfig(file = process.env.IDLEBOT_DOCKER === '1' ? '/data/id
       const wallet = profile.withdrawal ?? {};
       const hunt = profile.hunt ?? '';
       if (typeof hunt !== 'string' || !/^[a-z0-9-]*$/.test(hunt)) throw new Error('Rota de caça inválida.');
+      const mode = profile.mode ?? 'farm';
+      if (!['farm', 'shiny'].includes(mode)) throw new Error('Modo de caça inválido.');
       return {
-        id: index + 1, hunt, autoStart: profile.autoStart === undefined ? docker : profile.autoStart === true,
+        id: index + 1, hunt, mode, autoStart: profile.autoStart === undefined ? docker : profile.autoStart === true,
         display: docker ? `:${11 + index}` : undefined,
         goldReserve: integer(profile.goldReserve, 10_000, 0, Number.MAX_SAFE_INTEGER),
         maxListingFee: integer(profile.maxListingFee, 100_000, 0, Number.MAX_SAFE_INTEGER),
         marketEnabled: profile.marketEnabled !== false,
+        minListingGems: integer(profile.minListingGems, 1, 1, Number.MAX_SAFE_INTEGER),
+        repriceAfterHours: integer(profile.repriceAfterHours, 0, 0, 720),
         withdrawal: {
           enabled: wallet.enabled === true,
           wallet: String(wallet.wallet ?? '').trim(),

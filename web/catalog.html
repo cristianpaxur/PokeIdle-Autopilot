@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#101713">
+  <title>IdleBot | Pokémon e mercado</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/catalog.js" type="module"></script>
+</head>
+<body>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <a href="/" class="brand"><span class="mark" aria-hidden="true">◉</span> IdleBot</a>
+      <span class="connection">PokeIdle.io</span>
+    </div>
+  </header>
+  <main class="shell catalog">
+    <nav class="dashboard-nav" aria-label="Seções do IdleBot">
+      <a href="/">Caça</a>
+      <a id="collection-link" href="/colecao">Meus Pokémon</a>
+      <a id="market-link" href="/mercado">Mercado</a>
+    </nav>
+    <section class="hero" id="catalog-heading" aria-labelledby="catalog-title">
+      <a class="back-link" href="/colecao" id="back-link" hidden>← Meus Pokémon</a>
+      <div id="catalog-title-panel">
+        <div class="specimen-portrait" id="specimen-art" hidden></div>
+        <div class="catalog-title-copy">
+          <h1 id="catalog-title">Meus Pokémon</h1>
+          <p id="catalog-intro"></p>
+          <ul class="specimen-badges" id="specimen-badges" aria-label="Tipo e raridade" hidden></ul>
+        </div>
+        <dl class="specimen-metrics" id="specimen-metrics" aria-label="Dados principais" hidden></dl>
+        <div class="specimen-vitals" id="specimen-vitals" hidden></div>
+      </div>
+      <button id="catalog-refresh" class="profile-control" type="button">Atualizar</button>
+    </section>
+    <section id="collection" aria-label="Coleção de Pokémon" hidden>
+      <div class="catalog-toolbar">
+        <label class="catalog-search">Buscar Pokémon
+          <input id="collection-search" type="search" placeholder="Nome, apelido ou ID">
+        </label>
+        <label>Perfil <select id="profile-filter"><option value="">Todos os perfis</option></select></label>
+        <label>Local
+          <select id="location-filter">
+            <option value="">Todos os locais</option><option value="team">Equipe</option>
+            <option value="depot">Depot</option><option value="collection">Coleção</option>
+          </select>
+        </label>
+        <label>Ordenar por
+          <select id="collection-order">
+            <option value="">Nome (A–Z)</option>
+            <option value="level">Maior nível</option>
+            <option value="power">Maior potência</option>
+            <option value="rating">Maior nota</option>
+            <option value="iv">Maior IV total</option>
+          </select>
+        </label>
+        <label class="catalog-check"><input id="shiny-filter" type="checkbox"> Só shiny</label>
+      </div>
+      <p class="catalog-meta" id="profile-status"></p>
+      <ul class="pokemon-grid" id="pokemon-grid" aria-label="Pokémon encontrados"></ul>
+    </section>
+    <section id="market" aria-label="Mercado da Comunidade" hidden>
+      <form class="catalog-toolbar" id="market-filters">
+        <label>Categoria
+          <select id="market-type"><option value="item">Itens</option><option value="pokemon">Pokémon</option></select>
+        </label>
+        <label class="catalog-search">Buscar no mercado
+          <input id="market-search" type="search" placeholder="Nome do item ou espécie" maxlength="80">
+        </label>
+        <label>Moeda
+          <select id="market-currency"><option value="">Todas as moedas</option><option value="gold">Coins</option><option value="orb">Gemas</option></select>
+        </label>
+        <label id="market-order-label" hidden>Ordenar
+          <select id="market-order"><option value="recentes">Mais recentes</option><option value="baratos">Menor preço</option><option value="caros">Maior preço</option></select>
+        </label>
+        <button class="primary" type="submit">Consultar</button>
+      </form>
+      <div class="section-heading" id="item-heading" hidden>
+        <h2 id="item-title"></h2>
+        <button id="market-back" class="profile-control" type="button">← Todos os itens</button>
+      </div>
+      <div id="market-results"></div>
+    </section>
+    <section id="specimen" aria-label="Ficha do exemplar" hidden></section>
+    <p id="catalog-status" class="catalog-meta" role="status"></p>
+    <nav class="catalog-pages" id="catalog-pages" aria-label="Paginação" hidden>
+      <button id="page-previous" class="profile-control" type="button">← Anterior</button>
+      <span id="page-info"></span>
+      <button id="page-next" class="profile-control" type="button">Próxima →</button>
+    </nav>
+  </main>
+  <footer class="shell"><span>IdleBot · execução local</span><span>Dados da conta e do Mercado da Comunidade</span></footer>
+</body>
+</html>

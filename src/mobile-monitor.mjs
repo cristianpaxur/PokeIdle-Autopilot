@@ -6,13 +6,14 @@ import { qrSvg, serveAsset } from './web-assets.mjs';
 const files = new Map([
   ['/', ['mobile.html', 'text/html; charset=utf-8']],
   ['/mobile.js', ['mobile.js', 'text/javascript; charset=utf-8']],
+  ['/profile-summary.js', ['profile-summary.js', 'text/javascript; charset=utf-8']],
   ['/remote.js', ['remote.js', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
 ]);
 const digest = (value) => createHash('sha256').update(value).digest();
 const secret = () => randomBytes(32).toString('base64url');
 const screenAvailable = (profile) => profile?.active && !profile.paused && profile.control === 'automatic'
-  && ['hunting', 'ready', 'waiting'].includes(profile.status);
+  && ['hunting', 'ready', 'waiting', 'recovering'].includes(profile.status);
 
 export function createMobileMonitor({ snapshot, desktop }) {
   let access = null;
@@ -36,7 +37,15 @@ export function createMobileMonitor({ snapshot, desktop }) {
         response.setHeader('Set-Cookie', `${access.cookie}; Secure; HttpOnly; SameSite=Strict; Path=/`);
       }
       const profiles = snapshot().profiles.map((profile) => ({
-        id: profile.id, status: profile.status, hunt: profile.hunt, mission: profile.mission,
+        id: profile.id, status: profile.status, hunt: profile.hunt, mode: profile.mode, phase: profile.phase,
+        level: profile.level, active: profile.active, lastProgressAt: profile.lastProgressAt,
+        attention: profile.attention && { kind: profile.attention.kind, text: profile.attention.text },
+        periods: profile.periods, huntOptimizer: profile.huntOptimizer && {
+          trial: Boolean(profile.huntOptimizer.trial),
+          ranking: profile.huntOptimizer.ranking.filter(({ slug }) => slug === profile.hunt)
+            .map(({ slug, trainerXpPerHour }) => ({ slug, trainerXpPerHour })),
+        },
+        netGemsPerHour: profile.metrics?.netGemsPerHour ?? null, openListings: profile.openListings ?? 0,
         captures: profile.metrics?.captures ?? 0, screen: Boolean(screenAvailable(profile)),
       }));
       return response.writeHead(200, { 'Content-Type': 'application/json' }).end(JSON.stringify({ profiles }));

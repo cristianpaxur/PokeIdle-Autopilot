@@ -29,9 +29,10 @@ if (mobile) mobile.server.listen(0, '127.0.0.1', () => {
 const dashboard = createDashboard({
   remote: desktop ? { ...config.remote, desktop } : undefined,
   snapshot,
+  sessions,
   mobileQr: mobile?.qr,
   preview: (id) => sessions[id - 1].preview,
-  async command(id, action) {
+  async command(id, action, value) {
     const session = sessions[id - 1];
     const previous = commands.get(id) ?? Promise.resolve();
     const next = previous.catch(() => {}).then(async () => {
@@ -50,6 +51,11 @@ const dashboard = createDashboard({
       }
       if (desktop && desktop.state(id) !== 'automatic') {
         throw Object.assign(new Error('Devolva o controle antes de enviar outro comando.'), { status: 409 });
+      }
+      if (action === 'mode') {
+        await session.pendingTick?.catch(() => {});
+        session.setMode(value);
+        return;
       }
       if (action !== 'focus') ledger.setEnabled(id, action === 'start');
       await session[action]();
@@ -70,7 +76,10 @@ dashboard.server.listen(config.port, config.host, () => {
   }
 });
 
-const pulse = setInterval(publish, 15_000);
+const pulse = setInterval(() => {
+  for (const session of sessions) session.checkpointFarm();
+  publish();
+}, 15_000);
 let shuttingDown = false;
 async function shutdown() {
   if (shuttingDown) return;

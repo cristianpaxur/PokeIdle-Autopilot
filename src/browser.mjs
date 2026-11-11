@@ -16,9 +16,15 @@ export async function acceptGameUpdate(page) {
   return true;
 }
 
-export async function clickCapture(page) {
+export async function clickCapture(page, species) {
   const ball = page.locator('#caidos-bolas .caidos-bola.on:visible');
-  const target = page.locator('#caidos-lista .caido:not(.acabando):visible').first();
+  let targets = page.locator('#caidos-lista .caido:not(.acabando):visible');
+  if (species?.length) {
+    const names = species.map((name) => RegExp.escape(name)).join('|');
+    const label = page.locator('.caido-quem').filter({ hasText: new RegExp(`^(?:${names})\\s+Nv\\d+`) });
+    targets = targets.filter({ has: label });
+  }
+  const target = targets.first();
   if (!(await ball.isVisible()) || !(await target.isVisible())) return false;
   try {
     await target.click({ timeout: CAPTURE_WAIT });
@@ -78,7 +84,8 @@ function hookSocket({ key, origin, socketUrl }) {
     return original.call(this, payload);
   };
   const allowed = new Set(['hunt.select', 'centro.curar', 'auto.set', 'shop.buy', 'market.historico',
-    'market.historicoGlobal', 'market.meus', 'orbs.painel']);
+    'market.historicoGlobal', 'market.meus', 'market.listar', 'market.itens', 'market.item',
+    'market.criar', 'market.cancelar', 'pokemon.evoluir', 'team.active', 'orbs.painel']);
   Object.defineProperty(window, key, {
     value: (message) => {
       if (!allowed.has(message.t) || connection?.readyState !== WebSocket.OPEN) return false;

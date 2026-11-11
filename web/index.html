@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="/style.css">
   <script src="/app.js" type="module"></script>
 </head>
-<body>
+<body class="operations">
   <header class="topbar">
     <div class="shell topbar-inner">
       <a href="/" class="brand"><span class="mark" aria-hidden="true">◉</span> IdleBot</a>
@@ -20,24 +20,35 @@
     </div>
   </header>
   <main class="shell">
+    <nav class="dashboard-nav" aria-label="Seções do IdleBot">
+      <a href="/" aria-current="page">Caça</a>
+      <a href="/colecao">Meus Pokémon</a>
+      <a href="/mercado">Mercado</a>
+    </nav>
     <section class="hero" aria-labelledby="title">
-      <div>
-        <h1 id="title">Central de caça<span>.</span></h1>
-        <p>Acompanhe as capturas e as vendas das quatro contas do PokeIdle.io.</p>
-      </div>
-      <button id="start-all" class="primary" type="button">Abrir quatro perfis <span aria-hidden="true">↗</span></button>
+      <h1 id="title">Central de caça</h1>
+      <button id="start-all" class="primary" type="button">Abrir perfis</button>
     </section>
     <p id="feedback" class="feedback" role="status" hidden></p>
 
+    <section id="attention" class="attention-panel" aria-labelledby="attention-heading">
+      <h2 id="attention-heading">Atenção</h2>
+      <ul id="attention-list"><li class="no-attention">Aguardando dados dos perfis.</li></ul>
+    </section>
+
+    <div class="operation-toolbar">
+      <h2>Resumo</h2>
+      <label for="period">Período <select id="period"><option value="today">24 h</option><option value="week">7 dias</option></select></label>
+    </div>
     <dl class="kpis" aria-label="Resumo da operação">
-      <div><dt>Perfis caçando</dt><dd id="kpi-active">0 / 4</dd><small>Sessões em operação</small></div>
-      <div><dt>Capturas</dt><dd id="kpi-captures">0</dd><small id="kpi-shinies">0 shinies</small></div>
-      <div><dt>Estoque estimado</dt><dd id="kpi-stock">—</dd><small>Gemas · preços de referência</small></div>
-      <div><dt>Vendas líquidas</dt><dd id="kpi-sold">0</dd><small>Gemas · vendas registradas</small></div>
+      <div><dt>Perfis com atividade</dt><dd id="kpi-active">—</dd><small>Nos últimos 3 min</small></div>
+      <div><dt>Tempo de caça</dt><dd id="kpi-time">—</dd><small id="kpi-activity">No período</small></div>
+      <div><dt>Gemas confirmadas</dt><dd id="kpi-sold">—</dd><small id="kpi-sales">Vendas do bot no período</small></div>
+      <div><dt>Estoque estimado</dt><dd id="kpi-stock">—</dd><small id="kpi-stock-note">Gemas brutas · cotação disponível</small></div>
     </dl>
 
     <section class="section" aria-labelledby="profiles-heading">
-      <div class="section-heading"><h2 id="profiles-heading">Perfis</h2><span>01—04</span></div>
+      <div class="section-heading"><h2 id="profiles-heading">Perfis</h2></div>
       <div id="profiles" class="profiles"></div>
     </section>
 
@@ -64,7 +75,7 @@
   <dialog id="mobile-dialog" aria-labelledby="mobile-title">
     <h2 id="mobile-title">IdleBot no celular</h2>
     <p id="mobile-qr-status" role="status">Preparando acesso ao celular…</p>
-    <img id="mobile-code" width="240" height="240" alt="QR code para acompanhar o IdleBot no celular" hidden>
+    <div id="mobile-code"></div>
     <button id="mobile-close" type="button">Fechar</button>
   </dialog>
   <dialog id="remote-dialog" aria-labelledby="remote-title">
@@ -78,6 +89,6 @@
     <p id="remote-feedback" class="feedback" role="status" hidden></p>
     <div id="remote-view" class="view"><small>Conectando transmissão…</small></div>
   </dialog>
-  <footer class="shell"><span>IdleBot · execução local</span><span id="preview-note">Prévia da caça atualizada a cada 6 segundos</span></footer>
+  <footer class="shell"><span>IdleBot · execução local</span></footer>
 </body>
 </html>

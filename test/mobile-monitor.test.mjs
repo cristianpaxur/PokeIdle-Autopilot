@@ -8,7 +8,10 @@ import { createMobileMonitor } from '../src/mobile-monitor.mjs';
 test('a QR opens the read-only monitor and protects status, screens, and robot controls', async (t) => {
   const origin = new URL('https://sample-idlebot.trycloudflare.com');
   const profile = { id: 1, status: 'hunting', active: true, control: 'automatic', account: 'private-name',
-    mission: { sold: 5, target: 20, open: 3 }, withdrawals: [{ wallet: 'private-wallet' }] };
+    mode: 'farm', phase: 'outland', openListings: 3, metrics: { netGemsPerHour: 12.5 },
+    attention: { kind: 'recovering', text: 'Tentando voltar à rota.', secret: 'private-attention' },
+    periods: { today: { outland: { drops: 4 } } },
+    withdrawals: [{ wallet: 'private-wallet' }] };
   const monitor = createMobileMonitor({
     snapshot: () => ({ profiles: [profile] }),
     desktop: { upgrade: (_req, socket) => socket.end('HTTP/1.1 418 Test\r\nContent-Length: 0\r\n\r\n') },
@@ -37,8 +40,13 @@ test('a QR opens the read-only monitor and protects status, screens, and robot c
   assert.equal(paired.status, 200);
   assert.match(paired.headers['set-cookie'][0], /Secure; HttpOnly; SameSite=Strict/);
   const cookie = paired.headers['set-cookie'][0].split(';')[0];
-  assert.deepEqual(JSON.parse(paired.body).profiles[0].mission, profile.mission);
-  assert.doesNotMatch(paired.body, /private-name|private-wallet/);
+  const summary = JSON.parse(paired.body).profiles[0];
+  assert.equal(summary.phase, 'outland');
+  assert.equal(summary.netGemsPerHour, 12.5);
+  assert.equal(summary.openListings, 3);
+  assert.deepEqual(summary.attention, { kind: 'recovering', text: 'Tentando voltar à rota.' });
+  assert.equal(summary.periods.today.outland.drops, 4);
+  assert.doesNotMatch(paired.body, /private-name|private-wallet|private-attention/);
   assert.equal((await http('/api/state', { Cookie: cookie })).status, 200);
   assert.equal((await http('/api/profiles/1/stop', { Cookie: cookie }, 'POST')).status, 405);
   assert.equal((await http('/api/state', { Cookie: cookie, Host: 'wrong.example' })).status, 403);

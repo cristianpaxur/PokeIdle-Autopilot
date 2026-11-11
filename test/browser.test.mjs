@@ -11,9 +11,12 @@ test('the bot uses the regular throw button and skips expired targets', async ()
       <div id="caidos-lista">
         <button class="caido acabando" onclick="document.body.dataset.hit = 'expired'">Abra</button>
         <button class="caido" onclick="document.body.dataset.hit = 'current'">Pikachu</button>
+        <button class="caido" onclick="document.body.dataset.hit = 'eligible'"><span class="caido-quem">Nidoran♀ <b>Nv6</b></span></button>
       </div>`);
     assert.equal(await clickCapture(page), true);
     assert.equal(await page.locator('body').getAttribute('data-hit'), 'current');
+    assert.equal(await clickCapture(page, ['Nidoran♀']), true);
+    assert.equal(await page.locator('body').getAttribute('data-hit'), 'eligible');
     await page.locator('.caidos-bola').evaluate((button) => button.remove());
     assert.equal(await clickCapture(page), false);
   } finally {
