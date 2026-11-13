@@ -7,6 +7,14 @@ const defaults = {
   autoGyms: true, gymMinAdvantagePercent: 25, gymAttemptsPerDay: 2,
   autoBosses: true, bossTeamLevelPercent: 120, bossTokenReserve: 1,
   bossAttemptsPerDay: 2, bossMaxMinutes: 10, activitiesDuringXpEvents: false,
+  autoRewards: true, autoEquipment: true, autoXpShare: true, autoTeam: true,
+  autoIncubate: true, autoBuild: true,
+  teamMinGainPercent: 25, teamHoldMinutes: 15,
+  autoPvp: true, pvpAttemptsPerDay: 12, pvpQueueMinutes: 3, pvpLossStreak: 2, pvpRestMinutes: 60,
+  autoSafari: true, safariTicketsPerDay: 1, safariMinBalls: 40, safariMinTargets: 3,
+  autoRaids: true, raidTokenReserve: 1, raidMinGainPercent: 10,
+  captureMode: 'shiny', captureTargets: 'all', captureSpeciesIds: [],
+  ballMode: 'economy', fixedBallId: 1, autoBuyBalls: true, captureMinChancePercent: .5, ballMaxGold: 10000,
 };
 const limits = {
   goldReserve: [0, 1e9], supplyGoldPerHour: [0, 1e9], stockMinutes: [2, 60],
@@ -14,7 +22,13 @@ const limits = {
   gymMinAdvantagePercent: [0, 200], gymAttemptsPerDay: [0, 18],
   bossTeamLevelPercent: [100, 300], bossTokenReserve: [0, 1_000_000],
   bossAttemptsPerDay: [0, 100], bossMaxMinutes: [1, 60],
+  teamMinGainPercent: [10, 200], teamHoldMinutes: [5, 120],
+  pvpAttemptsPerDay: [0, 100], pvpQueueMinutes: [1, 15], pvpLossStreak: [1, 10], pvpRestMinutes: [5, 1440],
+  safariTicketsPerDay: [0, 3], safariMinBalls: [1, 1000], safariMinTargets: [1, 100],
+  raidTokenReserve: [0, 1_000_000], raidMinGainPercent: [1, 100],
+  fixedBallId: [1, 1_000_000], captureMinChancePercent: [0, 100], ballMaxGold: [0, 1e9],
 };
+const choices = { captureMode: ['off', 'shiny', 'all'], captureTargets: ['all', 'selected'], ballMode: ['economy', 'fixed'] };
 const badSettings = (message) => Object.assign(new Error(message), { status: 400 });
 
 export function plannerSettings(input = {}, base = {}) {
@@ -25,13 +39,19 @@ export function plannerSettings(input = {}, base = {}) {
     for (const [key, value] of Object.entries(values)) {
       if (!Object.hasOwn(defaults, key)) throw badSettings(`Preferência desconhecida: ${key}.`);
       const range = limits[key];
-      const valid = range
+      const valid = key === 'captureSpeciesIds'
+        ? Array.isArray(value) && value.length <= 200 && new Set(value).size === value.length
+          && value.every((id) => Number.isSafeInteger(id) && id > 0 && id <= 1_000_000)
+        : key === 'captureMinChancePercent' ? Number.isFinite(value) && value >= 0 && value <= 100
+          && Math.abs(value * 100 - Math.round(value * 100)) < 1e-8
+        : choices[key] ? choices[key].includes(value) : range
         ? Number.isSafeInteger(value) && value >= range[0] && value <= range[1] && value % (range[2] ?? 1) === 0
         : typeof value === 'boolean';
       if (!valid) throw badSettings(`Valor inválido para ${key}.`);
     }
   }
-  return { ...defaults, ...base, ...input };
+  const result = { ...defaults, ...base, ...input };
+  return { ...result, captureSpeciesIds: [...result.captureSpeciesIds].sort((a, b) => a - b) };
 }
 
 const positive = (value) => Number.isFinite(value) && value > 0;
@@ -121,12 +141,23 @@ function purchaseOrder(category, maxHp, settings) {
 }
 
 export function supplyPlan({ player, pokemon, items = [], balls = [], phase,
-  settings = plannerSettings(), spentGold = 0, rates = {} }) {
+  settings = plannerSettings(), spentGold = 0, rates = {}, capture }) {
   const budget = Math.max(0, Math.min(count(player?.gold) - settings.goldReserve, settings.supplyGoldPerHour - count(spentGold)));
   const automation = { autoPotion: settings.autoPotions, autoRevive: settings.autoRevives,
     hpLimiar: settings.hpThreshold / 100, potionIds: [], reviveIds: [] };
   const supplies = [];
   for (const { category, floor, minimum, flag, label } of supplyCategories) {
+    if (category === 'ball' && capture) {
+      for (const stock of capture.stocks) {
+        const ball = capture.restocks.find(({ id }) => id === stock.itemId);
+        const selected = ball && ball.priceGold <= budget
+          ? { id: ball.id, name: ball.name, unitPrice: ball.priceGold, have: stock.have } : null;
+        supplies.push({ category, label: stock.name, stock, selected,
+          purchasable: ball ? [ball] : [], restockHave: stock.have,
+          low: Boolean(ball) });
+      }
+      continue;
+    }
     if (flag ? !settings[flag] : phase !== 'shiny') continue;
     const isBall = category === 'ball';
     const maxHp = pokemon?.maxHp;

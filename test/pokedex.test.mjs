@@ -6,9 +6,15 @@ import { createDashboard } from '../src/dashboard.mjs';
 async function setup(t) {
   const dashboard = createDashboard({ snapshot: () => ({ profiles: [] }), command: () => {} });
   await new Promise((resolve) => dashboard.server.listen(0, '127.0.0.1', resolve));
-  t.after(() => dashboard.close());
-  const browser = await chromium.launch({ channel: 'msedge', headless: true });
-  t.after(() => browser.close());
+  let browser;
+  t.after(async () => {
+    try {
+      await browser?.close();
+    } finally {
+      await dashboard.close();
+    }
+  });
+  browser = await chromium.launch({ channel: 'msedge', headless: true });
   const page = await browser.newPage();
   await page.route('**/api/pokemon-atlas', (route) => route.fulfill({ json: {} }));
   return { page, url: `http://127.0.0.1:${dashboard.server.address().port}` };

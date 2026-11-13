@@ -3,7 +3,7 @@ import test from 'node:test';
 import { chromium } from 'playwright-core';
 import { createDashboard } from '../src/dashboard.mjs';
 
-test('the dashboard shows phase metrics and the hunt view together in each profile', async (t) => {
+test('the dashboard keeps the hunt view and metrics visible while profile actions open separately', async (t) => {
   const profiles = [{
     id: 1, active: true, status: 'setup', mode: 'farm', phase: 'progression', level: 45,
     attention: { kind: 'action', text: 'Conclua a configuração inicial no jogo.' },
@@ -16,7 +16,8 @@ test('the dashboard shows phase metrics and the hunt view together in each profi
     periods: { today: { shiny: { huntMs: 3_600_000, encounters: 100, balls: 40 } },
       week: { shiny: { huntMs: 7_200_000, encounters: 300, balls: 80 } } },
   }];
-  const dashboard = createDashboard({ snapshot: () => ({ profiles }), command: () => {} });
+  const state = { profiles };
+  const dashboard = createDashboard({ snapshot: () => state, command: () => {} });
   await new Promise((resolve) => dashboard.server.listen(0, '127.0.0.1', resolve));
   t.after(() => dashboard.close());
   const browser = await chromium.launch({ channel: 'msedge' });
@@ -35,9 +36,24 @@ test('the dashboard shows phase metrics and the hunt view together in each profi
   assert.doesNotMatch(await shiny.textContent(), /Medindo XP/);
   await page.getByLabel('Período').selectOption('week');
   assert.match(await shiny.textContent(), /150 encontros elegíveis\/h/);
+  const preview = shiny.getByRole('img', { name: 'Cena da caça de Perfil 02' });
   await shiny.locator('.view').scrollIntoViewIfNeeded({ timeout: 3000 });
-  await shiny.getByRole('img', { name: 'Cena da caça de Perfil 02' }).waitFor({ timeout: 3000 });
-  assert.equal(await shiny.evaluate((card) => Boolean(card.querySelector('.phase-stats')
-    .compareDocumentPosition(card.querySelector('.view')) & Node.DOCUMENT_POSITION_FOLLOWING)), true);
+  await preview.waitFor({ timeout: 3000 });
+  assert.equal(await shiny.locator('details, form').count(), 0);
+  const actions = shiny.getByRole('button', { name: 'Ações, Perfil 02' });
+  await actions.click();
+  const panel = page.getByRole('dialog', { name: 'Perfil 02' });
+  assert.equal(await panel.getByLabel('Modo de caça, Perfil 02').isVisible(), true);
+  await panel.getByRole('button', { name: 'Mercado', exact: true }).click();
+  assert.equal(await panel.getByLabel('Modo de caça, Perfil 02').isVisible(), false);
+  await panel.getByRole('button', { name: 'Voltar aos perfis' }).click();
+  assert.equal(await panel.isVisible(), false);
+  assert.equal(await actions.evaluate((button) => button === document.activeElement), true);
   assert.equal(await page.evaluate(() => document.documentElement.scrollWidth), 390);
+  state.remote = true;
+  dashboard.publish();
+  await page.getByRole('button', { name: 'Ver 4 telas' }).click();
+  assert.equal(await shiny.locator('.view').isVisible(), true);
+  await page.getByRole('button', { name: 'Voltar ao painel' }).click();
+  assert.equal(await shiny.locator('.view').isVisible(), true);
 });

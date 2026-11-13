@@ -1,6 +1,8 @@
 import { randomUUID } from 'node:crypto';
 import { evolutionGoal, gameBonuses, plannerSettings, stoneRoute, supplyPlan } from './planning.mjs';
 import { ActivityPlanner } from './activities.mjs';
+import { AccountStrategy } from './strategy.mjs';
+import { CapturePlanner } from './capture-planner.mjs';
 
 const outside = (p) => p?.boss?.arena || p?.mistico || p?.safari?.dentro || p?.casa?.dentro;
 const number = (n) => Math.round(n).toLocaleString('pt-BR');
@@ -24,6 +26,8 @@ export class AccountPlanner {
       goldReserve: session.config.goldReserve ?? 10000,
     });
     this.activities = new ActivityPlanner(this);
+    this.strategy = new AccountStrategy(this);
+    this.capture = new CapturePlanner(this);
   }
 
   configure(value) {
@@ -39,6 +43,8 @@ export class AccountPlanner {
     this.account = this.session.account;
     this.runtime = this.session.ledger.plannerState(this.account);
     this.activities.reset();
+    this.strategy.reset();
+    this.capture.reset();
     this.suspend();
   }
 
@@ -81,6 +87,8 @@ export class AccountPlanner {
   record(message, now = Date.now()) {
     this.connect();
     this.activities.record(message, now);
+    this.strategy.record(message, now);
+    this.capture.record(message, now);
     const { session } = this;
     const pending = this.pending();
     if (pending) {
@@ -144,13 +152,15 @@ export class AccountPlanner {
     }
     this.bonuses = gameBonuses(player, state.serverNow(now));
     this.activities.refresh(now);
+    this.strategy.refresh(now);
     const minutes = Math.max(1, Math.min(5, (now - this.trackingSince) / 60_000));
     const rates = {};
     for (const row of this.consumption) {
       if (now - row.at <= 300_000) rates[row.category] = (rates[row.category] ?? 0) + 1 / minutes;
     }
     this.supply = supplyPlan({ player: player ?? {}, pokemon, items: state.items, balls: state.balls,
-      phase: session.phase(), settings, spentGold: this.spent(now), rates });
+      phase: session.phase(), settings, spentGold: this.spent(now), rates,
+      capture: this.activities.advanced.preparationSupplies() ?? this.capture.refresh(rates.ball) });
     this.goal = session.mode === 'shiny' ? null : evolutionGoal({ pokemon, species: this.species,
       stones: state.evolutionStones, items: player?.items ?? {} });
     if (!session.active()) {
@@ -188,8 +198,13 @@ export class AccountPlanner {
       this.stoneLastAt = null;
       return;
     }
-    const upcoming = this.activities.evaluated.gym?.ready ? this.activities.evaluated.gym
-      : this.activities.evaluated.boss?.ready ? this.activities.evaluated.boss : null;
+    const improvement = this.strategy.next();
+    if (improvement && !pending) {
+      this.stoneLastAt = null;
+      this.setDecision(`strategy:${improvement.id}`, improvement.title, improvement.reason);
+      return;
+    }
+    const upcoming = this.activities.next();
     if (upcoming && !pending) {
       this.stoneLastAt = null;
       this.setDecision('activity-ready', upcoming.title, upcoming.reason);
@@ -260,7 +275,8 @@ export class AccountPlanner {
   async buySupplies() {
     const { session } = this;
     const { player } = session.state;
-    if (!session.active() || outside(player)) return false;
+    const managedSafari = this.activities.current?.kind === 'safari' && player?.safari?.dentro;
+    if (!session.active() || outside(player) && !managedSafari) return false;
     this.refresh();
     if (this.pending() || !this.supply.action) return false;
     if (!session.elapsed('supplies', 10_000)) return false;
@@ -313,6 +329,7 @@ export class AccountPlanner {
       spending: { used: this.spent(), limit: this.settings.supplyGoldPerHour,
         available: Math.max(0, Math.min((state.player?.gold ?? 0) - this.settings.goldReserve,
           this.settings.supplyGoldPerHour - this.spent())) },
-      lastAction: this.runtime.lastAction ?? null, activities: this.activities.snapshot() };
+      lastAction: this.runtime.lastAction ?? null, activities: this.activities.snapshot(), capture: this.capture.snapshot(),
+      strategy: this.strategy.snapshot() };
   }
 }

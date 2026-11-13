@@ -51,7 +51,7 @@ function initializeSound() {
   // Capture runs before action handlers temporarily disable their buttons.
   document.addEventListener('click', (event) => {
     if (!event.isTrusted || !(event.target instanceof Element)) return;
-    const control = event.target.closest('button, a[href], summary, input[type="checkbox"]');
+    const control = event.target.closest('button, a[href], input[type="checkbox"]');
     if (!control || control.matches(':disabled, [aria-disabled="true"]') || control.closest('[inert]')) return;
     if (control === button) {
       enabled = !enabled;

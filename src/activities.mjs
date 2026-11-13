@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { gymPlan, bossPlan } from './activity-policy.mjs';
 import { pokemonAtlas } from './catalog.mjs';
+import { AdvancedActivities } from './advanced-activities.mjs';
 
 const DAY = 86_400_000;
 const FRESH = 300_000;
@@ -15,12 +16,12 @@ export class ActivityPlanner {
   stateAt = 0;
   evaluated = { gym: null, boss: null };
 
-  constructor(planner) { this.planner = planner; this.session = planner.session; }
+  constructor(planner) { this.planner = planner; this.session = planner.session; this.advanced = new AdvancedActivities(this); }
   get current() { return this.planner.runtime.activity ?? null; }
   get history() { return this.planner.runtime.activityHistory ?? []; }
-  get interruptsHunt() { return this.current?.kind === 'boss'; }
+  get interruptsHunt() { return ['boss', 'safari'].includes(this.current?.kind); }
 
-  reset() { this.ratings = {}; this.ratingsKey = null; this.ratingsAt = 0; }
+  reset() { this.ratings = {}; this.ratingsKey = null; this.ratingsAt = 0; this.advanced.reset(); }
   persist() { this.planner.persist(); }
 
   fingerprint(pokemon = [...this.session.state.pokemon.values()]) {
@@ -47,7 +48,7 @@ export class ActivityPlanner {
 
   refresh(now = Date.now()) {
     const input = this.input(now);
-    this.evaluated = { gym: gymPlan(input), boss: bossPlan(input) };
+    this.evaluated = { gym: gymPlan(input), boss: bossPlan(input), ...this.advanced.refresh(now) };
     if (this.evaluated.boss.ready && input.player?.activeId !== input.primary?.id) {
       this.evaluated.boss = { ...this.evaluated.boss, ready: false, code: 'active',
         title: 'Aguardando Pokémon principal', reason: 'O jogo precisa confirmar o principal como ativo antes da entrada no boss.' };
@@ -60,9 +61,21 @@ export class ActivityPlanner {
     if (!a) return null;
     const stages = { disarming: 'Desligando repetição do boss', entering: 'Confirmando entrada no boss',
       fighting: 'Enfrentando boss', returning: 'Retornando à hunt', saving: 'Registrando equipe de ginásio',
-      registered: 'Conferindo equipe registrada', challenging: 'Aguardando resultado do ginásio' };
+      registered: 'Conferindo equipe registrada', challenging: 'Aguardando resultado do ginásio',
+      joining: 'Entrando na fila PvP', queued: 'Caçando enquanto aguarda o PvP', cancelling: 'Saindo da fila PvP',
+      registering: 'Inscrevendo na raid semanal', capturing: 'Capturando no Safári' };
+    if (this.advanced.owns(a.kind) && a.stage === 'saving') return { code: `activity-${a.kind}`,
+      title: a.kind === 'raid' ? 'Registrando formação da raid' : 'Registrando formação do PvP', reason: a.note };
+    if (this.advanced.owns(a.kind) && ['disarming', 'entering'].includes(a.stage)) return { code: `activity-${a.kind}`,
+      title: a.stage === 'disarming' ? 'Preparando os controles da atividade' : 'Confirmando entrada no Safári', reason: a.note };
     return { code: `activity-${a.kind}`, title: stages[a.stage] ?? 'Reconciliando atividade',
       reason: a.note || `${a.name ?? a.target}. Uma tentativa por vez; aguardando confirmação do jogo.` };
+  }
+
+  next() {
+    return Object.entries(this.evaluated).filter(([, plan]) => plan?.ready)
+      .map(([kind, plan]) => ({ ...plan, kind, priority: plan.priority ?? (kind === 'gym' ? 60 : 50) }))
+      .sort((a, b) => b.priority - a.priority)[0] ?? null;
   }
 
   update(patch) {
@@ -82,15 +95,18 @@ export class ActivityPlanner {
       status: result === 'uncertain' ? 'uncertain' : 'confirmed' });
     delete this.planner.runtime.activity;
     this.planner.action(a.kind, note, result === 'uncertain' ? 'uncertain' : 'confirmed', now);
-    this.session.due.hunt = 0;
-    this.session.optimizer.suspend();
+    if (!['pvp', 'raid'].includes(a.kind)) {
+      this.session.due.hunt = 0;
+      this.session.optimizer.suspend();
+    }
     this.persist();
   }
 
   record(message, now = Date.now()) {
     if (['estado', 'welcome'].includes(message.t) && message.estado) this.stateAt = now;
+    this.advanced.record(message, now);
     const a = this.current;
-    if (!a) return;
+    if (!a || this.advanced.owns(a.kind)) return;
     const { state } = this.session;
     const p = state.player;
     if (a.kind === 'gym') {
@@ -194,7 +210,9 @@ export class ActivityPlanner {
 
   async consider() {
     const { session, planner } = this;
-    if (!session.active() || this.current || planner.pending() || elsewhere(session.state.player) || session.state.player?.boss?.arena) return false;
+    if (!session.active() || this.current || planner.pending() || planner.strategy.pending() || elsewhere(session.state.player) || session.state.player?.boss?.arena) return false;
+    await this.advanced.prepare();
+    if (!session.active()) return false;
     this.refresh();
     let { gym, boss } = this.evaluated;
     if (gym.code === 'checking') {
@@ -203,7 +221,9 @@ export class ActivityPlanner {
       if (!session.active()) return false;
       ({ gym, boss } = this.refresh());
     }
-    const kind = gym.ready ? 'gym' : boss.ready ? 'boss' : null;
+    const selected = this.next();
+    if (this.advanced.owns(selected?.kind)) return this.advanced.consider(selected);
+    const kind = selected?.kind ?? null;
     const plan = kind === 'gym' ? gym : boss;
     if (!kind || !session.state.canSwitchHunt(Date.now())) return false;
     let casas;
@@ -231,7 +251,7 @@ export class ActivityPlanner {
         ? session.state.player.boss.vitorias[plan.target] ?? 0 : undefined,
       stage: kind === 'gym' ? plan.action === 'register' ? 'saving' : 'challenging'
         : session.state.player.boss?.auto === false ? 'entering' : 'disarming', sentAt: now };
-    planner.runtime.activityHistory = [...this.history.filter((row) => now - row.at < DAY), { ...a }];
+    planner.runtime.activityHistory = [...this.history.filter((row) => now - row.at < 14 * DAY), { ...a }];
     planner.runtime.activity = a;
     session.optimizer.suspend();
     if (kind === 'boss') session.sampleFarm(false);
@@ -246,6 +266,8 @@ export class ActivityPlanner {
   }
 
   async run(now = Date.now()) {
+    const handled = await this.advanced.run(now);
+    if (handled || this.advanced.owns(this.current?.kind)) return handled;
     const a = this.current;
     const { session } = this;
     if (!a || !session.active()) return false;
@@ -323,7 +345,7 @@ export class ActivityPlanner {
   snapshot() {
     const a = this.current;
     return { ...this.evaluated, active: a && { kind: a.kind, target: a.target, stage: a.stage, at: a.at },
-      history: [...this.history].reverse().slice(0, 10).map(({ kind, target, at, status, result, note, durationMs, tookLead }) =>
-        ({ kind, target, at, status, result, note, durationMs, tookLead })) };
+      history: [...this.history].reverse().slice(0, 10).map(({ kind, target, at, status, result, note, durationMs, tookLead, captures, delta }) =>
+        ({ kind, target, at, status, result, note, durationMs, tookLead, captures, delta })) };
   }
 }

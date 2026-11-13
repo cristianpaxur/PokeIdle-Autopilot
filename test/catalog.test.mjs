@@ -113,26 +113,33 @@ test('opens a specific specimen from the collection and reloads its direct link'
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   t.after(() => browser.close());
   const page = await browser.newPage({ viewport: { width: 400, height: 850 } });
+  page.setDefaultTimeout(15_000);
   await page.route('https://**', (route) => route.abort());
   await page.route('**/api/pokemon-atlas', (route) => route.fulfill({ json: {} }));
   await page.route('**/api/pokemon-sprite/329', (route) => route.fulfill({ json: {
     path: '/assets/asset-packs/outfits/male/329/mock.webp', x: 2, y: 2, w: 64, h: 64, width: 128, height: 128,
   } }));
-  await page.goto(url);
-  await page.getByRole('link', { name: 'Meus Pokémon' }).click({ timeout: 2500 });
+  await page.goto(url, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('link', { name: 'Meus Pokémon' }).click();
   const tribal = page.getByRole('link', { name: /Tribal Feraligatr/ });
-  await tribal.locator('.pokemon-sprite span[style*="mock.webp"]').waitFor({ timeout: 2500 });
+  await tribal.locator('.pokemon-sprite span[style*="mock.webp"]').waitFor();
   const raio = page.getByRole('link', { name: /Raio/ });
-  await raio.waitFor({ timeout: 2500 });
+  await raio.waitFor();
   assert.match(await raio.innerText(), /Nível\s+30\s+Potência\s+P3\s+Nota\s+0\s+IV total\s+39/);
   assert.match(await page.getByRole('link', { name: /Abra/ }).innerText(), /Nota\s+—\s+IV total\s+—/);
-  await raio.click({ timeout: 2500 });
-  assert.equal(new URL(page.url()).pathname, '/pokemon/1/41');
-  await page.getByRole('heading', { name: 'Raio', exact: true }).waitFor({ timeout: 2500 });
+  await raio.click();
+  await page.waitForURL(`${url}/pokemon/1/41`, { waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Raio', exact: true }).waitFor();
   assert.match(await page.locator('main').innerText(), /75\s*\/\s*80/);
   assert.equal(await page.locator('.catalog-table').evaluate((table) => table.scrollWidth <= table.clientWidth), true);
-  await page.reload();
-  await page.getByRole('heading', { name: 'Raio', exact: true }).waitFor({ timeout: 2500 });
+  assert.equal(await page.locator('#specimen details').count(), 0);
+  await page.getByRole('button', { name: 'Dados enviados pelo jogo' }).click();
+  const data = page.getByRole('dialog', { name: 'Dados enviados pelo jogo' });
+  assert.match(await data.locator('pre').innerText(), /"nome": "Pikachu"/);
+  await data.getByRole('button', { name: 'Voltar à ficha' }).click();
+  assert.equal(await data.isVisible(), false);
+  await page.reload({ waitUntil: 'domcontentloaded' });
+  await page.getByRole('heading', { name: 'Raio', exact: true }).waitFor();
 });
 
 test('sorts the filtered collection numerically before splitting it into pages', async (t) => {

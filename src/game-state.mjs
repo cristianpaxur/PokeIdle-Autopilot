@@ -17,11 +17,22 @@ export class GameState {
   market = null;
   hunts = [];
   bosses = [];
+  houses = null;
+  bicycles = null;
+  xpShareHeld = null;
+  generation = 0;
   gymInfo = null;
   gymInfoAt = 0;
   gymPanel = null;
   gymPanelAt = 0;
+  pvpInfo = null;
+  pvpInfoAt = 0;
+  pvpCooldownUntil = 0;
+  raidInfo = null;
+  raidInfoAt = 0;
+  safariPool = null;
   balls = [];
+  captureRules = null;
   items = [];
   pokemon = new Map();
   inventoryAt = null;
@@ -41,15 +52,26 @@ export class GameState {
   consume(message, now = Date.now()) {
     this.lastFrameAt = now;
     if (message.t === 'welcome') {
+      this.generation++;
       this.lastProgressAt = null;
       this.market = message.mercado ?? null;
       this.hunts = message.hunts ?? [];
       this.bosses = Array.isArray(message.bossesJogaveis) ? message.bossesJogaveis : [];
+      this.houses = message.casas ?? null;
+      this.bicycles = message.bicicletas ?? null;
+      this.xpShareHeld = message.xpShareHeld ?? null;
       this.gymInfo = null;
       this.gymInfoAt = 0;
       this.gymPanel = null;
       this.gymPanelAt = 0;
+      this.pvpInfo = null;
+      this.pvpInfoAt = 0;
+      this.pvpCooldownUntil = 0;
+      this.raidInfo = null;
+      this.raidInfoAt = 0;
+      this.safariPool = Number.isSafeInteger(message.safariPool) && message.safariPool > 0 ? message.safariPool : null;
       this.balls = message.catalogoBolas ?? [];
+      this.captureRules = message.captura ?? null;
       this.items = message.itensNossos ?? [];
       this.shinyLooks = message.shinyLooks ?? {};
       this.shinyLooksOutland = message.shinyLooksOutland ?? {};
@@ -66,6 +88,31 @@ export class GameState {
     }
     if (message.t === 'estado') this.updatePlayer(message.estado, false, now);
     if (message.t === 'orbs') this.panel = message;
+    if (message.t === 'pvp') {
+      const fields = ['rank', 'posicao', 'posicaoFinal', 'corteFinal', 'totalClassificados', 'time', 'casas',
+        'formacoes', 'historico', 'regras', 'fila', 'naoVistas'];
+      for (const key of fields) if (Object.hasOwn(message, key)) {
+        (this.pvpInfo ??= {})[key] = key === 'fila' ? { ...this.pvpInfo?.fila, ...message[key] } : message[key];
+      }
+      if (message.regras && Object.hasOwn(message, 'rank')) this.pvpInfoAt = now;
+      if (Array.isArray(message.timeSalvo)) (this.pvpInfo ??= {}).time = message.timeSalvo;
+      if (message.casasSalvas) (this.pvpInfo ??= {}).casas = message.casasSalvas;
+      if (Number.isFinite(message.fila?.cooldownMs)) this.pvpCooldownUntil = now + Math.max(0, message.fila.cooldownMs);
+      if (message.filaRecusa) {
+        (this.pvpInfo ??= {}).fila = { ...this.pvpInfo?.fila, na: false };
+        if (Number.isFinite(message.filaRecusa.restaMs)) this.pvpCooldownUntil = now + Math.max(0, message.filaRecusa.restaMs);
+      }
+      if (message.partida?.id) {
+        (this.pvpInfo ??= {}).lastMatch = { ...message.partida, receivedAt: now };
+        this.pvpInfo.fila = { ...this.pvpInfo.fila, na: false };
+        this.pvpCooldownUntil = Math.max(this.pvpCooldownUntil, now + 20_000);
+      }
+    }
+    if (message.t === 'raid' && message.edicao && message.eu) {
+      this.raidInfo = this.raidInfo?.edicao?.id === message.edicao.id
+        ? { ...this.raidInfo, ...message } : { ...message };
+      this.raidInfoAt = now;
+    }
     if (message.t === 'ginasio') {
       if (message.info) {
         this.gymInfo = message.info;

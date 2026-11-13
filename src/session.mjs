@@ -1,11 +1,12 @@
 import { join } from 'node:path';
 import { randomUUID } from 'node:crypto';
-import { acceptGameUpdate, clickCapture, GAME_URL, GameBrowser, prepareListing, prepareWithdrawal } from './browser.mjs';
+import { acceptGameUpdate, GAME_URL, GameBrowser, prepareListing, prepareWithdrawal } from './browser.mjs';
 import { GameState, pokemonFrom } from './game-state.mjs';
 import { pokemonAtlas } from './catalog.mjs';
 import { HuntOptimizer } from './hunt-optimizer.mjs';
 import { AccountPlanner } from './planner.mjs';
 import { gameBonuses } from './planning.mjs';
+import { strategicReserves } from './strategy-policy.mjs';
 import { openNativeLogin } from './native-login.mjs';
 import { farmPhase, hasShiny, identifyItemSale, isOutland, listingDecision, netGems, nextHunt,
   pickFarmHunt, quote, quoteItem, withdrawalAmount } from './policy.mjs';
@@ -213,6 +214,7 @@ export class Session {
         this.historyReady = false;
         this.planner.suspend();
         this.planner.activities.reset();
+        this.planner.capture.reset();
         this.update(this.paused ? 'paused' : 'ready', this.paused ? 'Automação pausada. A janela do jogo continua aberta.' : 'Sessão autenticada.');
       }
       if (message.t === 'erro' && accountError.test(message.chave ?? '')) {
@@ -376,6 +378,7 @@ export class Session {
       if (this.status !== 'blocked') this.update('blocked', 'O jogo está aguardando uma confirmação na janela.');
       return;
     }
+    if (await this.planner.strategy.dismissRewards()) return;
     const player = this.state.player;
     if (!positiveInteger(player.activeId)) {
       if (this.status !== 'setup') this.update('setup', 'Conclua a configuração inicial da conta no jogo.');
@@ -393,29 +396,26 @@ export class Session {
       return;
     }
     const phase = this.phase();
+    await this.planner.capture.prepare();
+    if (!this.active()) return;
     if (await this.planner.buySupplies()) return;
     if (phase !== 'shiny' && !player.boss?.arena && !player.mistico && !player.safari?.dentro
       && !player.casa?.dentro && await this.trainPokemon(player)) return;
+    if (await this.planner.strategy.run()) return;
     if (await this.planner.activities.consider()) return;
     if (await this.setHunt(player)) return;
-    if (this.active() && this.phase() === 'shiny' && this.onStrategyHunt() && !player.automation?.autoBallSemParar
-      && !player.automation?.autoBallAteCapturar && this.elapsed('throw', 2800)) {
-      const hunt = this.state.hunts.find(({ slug }) => slug === this.state.player.huntSlug);
-      const eligible = hunt.especies.filter(({ pokeId }) => this.state.shinyLooks[pokeId] != null);
-      const names = eligible.length < hunt.especies.length && eligible.every(({ nome }) => typeof nome === 'string' && nome)
-        ? eligible.map(({ nome }) => nome) : undefined;
-      await clickCapture(page, names);
-    }
+    if (this.active() && this.elapsed('throw', 2800)) await this.planner.capture.run();
     if (this.historyReady && (this.config.marketEnabled || this.ledger.openListings(this.account).length)
       && this.elapsed('market', 42_000)) await this.market();
     if (this.config.withdrawal?.enabled && this.elapsed('wallet', 120_000)) await this.withdraw();
     const next = this.onStrategyHunt() ? 'hunting' : 'waiting';
     const currentPhase = this.phase();
-    const hasBalls = Object.values(player.balls ?? {}).some((amount) => amount > 0);
+    const capture = this.planner.capture.plan;
     const note = next !== 'hunting' ? 'Aguardando uma rota segura para o modo selecionado.'
       : currentPhase === 'progression' ? 'Treinando o Pokémon principal até liberar a Outland.'
         : currentPhase === 'outland' ? 'Farmando tokens e fragmentos na Outland.'
-          : hasBalls ? 'Capturando em uma rota com espécies shiny.' : 'Caçando por ouro para repor bolas.';
+          : capture?.enabled && capture.targets.some(({ available }) => available)
+            ? 'Capturando em uma rota com espécies shiny.' : capture?.reason ?? 'Aguardando uma bola adequada para capturar.';
     if (this.active() && (this.status !== next || this.note !== note)) this.update(next, note);
   }
 
@@ -493,8 +493,8 @@ export class Session {
   async setHunt(player) {
     const automation = player.automation;
     const phase = this.phase();
-    const stopBalls = phase !== 'shiny' && (automation?.autoBallSemParar || automation?.autoBallAteCapturar);
-    const managed = this.planner.supply?.automation ?? {};
+    const stopBalls = automation?.autoBallSemParar || automation?.autoBallAteCapturar;
+    const managed = { ...this.planner.supply?.automation, autoBallSemParar: false, autoBallAteCapturar: false };
     const autoChanged = Object.entries(managed).some(([key, value]) => JSON.stringify(automation?.[key]) !== JSON.stringify(value));
     if (!awayFromHunt(player) && automation && (autoChanged || !automation.autoVoltarHunt || stopBalls)
       && this.elapsed('auto', 30_000)) {
@@ -620,13 +620,15 @@ export class Session {
       if (!candidate) return;
       const owned = this.state.pokemon.get(candidate.id);
       if (owned?.shiny && owned.slot == null && !owned.starter && candidate.id !== player.activeId && candidate.id !== trained
-        && !locked.has(candidate.id) && !listedIds.has(String(candidate.id))) current = pokemonFrom(owned);
+        && !locked.has(candidate.id) && !listedIds.has(String(candidate.id))
+        && !this.planner.activities.advanced.reservedIds().has(candidate.id)) current = pokemonFrom(owned);
       if (current) break;
       this.ledger.saveQuote(account, candidate.id, null);
     }
     if (!current) return;
     const valuation = await this.pokemonValuation(current);
-    if (valuation === undefined || !this.active() || this.account !== account || this.phase() !== 'shiny') return;
+    if (valuation === undefined || !this.active() || this.account !== account || this.phase() !== 'shiny'
+      || this.planner.activities.advanced.reservedIds().has(current.id)) return;
     this.ledger.saveQuote(account, current.id, valuation);
     const decision = listingDecision(valuation, this.listingMinimum('shiny'));
     this.marketUpdate(decision.code, decision.text, current.name);
@@ -644,7 +646,7 @@ export class Session {
       }
       const quotedFee = await browser.page.locator('#confirmar:visible .dlg-custo-num').textContent({ timeout: 1000 });
       if (this.phase() !== 'shiny' || Number(quotedFee.replace(/[^0-9]/g, '')) !== fee
-        || this.state.player.gold - fee < this.config.goldReserve) return;
+        || this.state.player.gold - fee < this.config.goldReserve || this.planner.activities.advanced.reservedIds().has(current.id)) return;
       const confirmed = await this.confirmOperation(account, 'listing', String(current.id), { ...valuation, pokemon: current },
         marketReply('criado'), 'shiny');
       this.marketUpdate(confirmed ? 'listed' : 'pending',
@@ -761,7 +763,9 @@ export class Session {
       .map(({ itemId }) => Number(itemId)));
     const trackedItems = new Set(this.ledger.openListings(account)
       .filter(({ kind }) => kind === 'item-listing').map(({ itemId }) => itemId));
-    const itemId = this.state.outlandItems.find((id) => positiveInteger(player.items?.[id])
+    const reserved = (id) => strategicReserves(this.state, this.planner.settings, this.planner.activities.advanced.rules?.raid)
+      .find((item) => item.itemId === id)?.quantity ?? 0;
+    const itemId = this.state.outlandItems.find((id) => positiveInteger(player.items?.[id]) && player.items[id] > reserved(id)
       && !listedItems.has(id) && !trackedItems.has(id) && this.elapsed(`itemQuote:${id}`, 300_000));
     if (!itemId) return;
     const valuation = await this.itemValuation(itemId);
@@ -771,7 +775,7 @@ export class Session {
     this.ledger.saveItemQuote(account, itemId, { valuation, decision });
     this.marketUpdate(decision.code, decision.text, name);
     const stockBefore = this.state.player.items?.[itemId];
-    if (decision.code !== 'ready' || !positiveInteger(stockBefore) || this.phase() !== 'outland') return;
+    if (decision.code !== 'ready' || !positiveInteger(stockBefore) || stockBefore <= reserved(itemId) || this.phase() !== 'outland') return;
 
     const key = randomUUID();
     const { gems } = valuation;

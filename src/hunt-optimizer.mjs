@@ -30,7 +30,7 @@ export class HuntOptimizer {
       now < (player.loja?.boosts?.pokexp ?? 0), player.guildBonusPct ?? 0,
       now < (player.guild?.boostAte ?? 0), player.automation?.autoPotion, player.automation?.autoRevive,
       player.automation?.hpLimiar, player.automation?.potionIds, player.automation?.reviveIds,
-      player.ginasiosPodio, player.ginasios, conditions]);
+      player.ginasiosPodio, player.ginasios, player.bicicleta?.equipadaRar, conditions]);
     if (context !== this.context) {
       this.suspend();
       this.context = context;

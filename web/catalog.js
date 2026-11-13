@@ -355,9 +355,15 @@ async function loadSpecimen() {
     ['Capturado em', pokemon.capturedAt ? date(pokemon.capturedAt) : null],
   ]));
   columns.append(stats, side);
-  const extra = element('details', null, 'catalog-panel section');
-  extra.append(element('summary', 'Todos os dados enviados pelo jogo'), element('pre', JSON.stringify(pokemon.details, null, 2)));
-  byId('specimen').replaceChildren(columns, extra);
+  const raw = element('button', 'Dados enviados pelo jogo', 'profile-control specimen-data-trigger');
+  raw.type = 'button';
+  raw.setAttribute('aria-haspopup', 'dialog');
+  raw.setAttribute('aria-controls', 'specimen-data-panel');
+  raw.addEventListener('click', () => {
+    byId('specimen-data-view').textContent = JSON.stringify(pokemon.details, null, 2) || 'Nenhum dado disponível.';
+    byId('specimen-data-panel').showModal();
+  });
+  byId('specimen').replaceChildren(columns, raw);
   byId('catalog-status').textContent = profileStatus(result);
 }
 
@@ -442,6 +448,7 @@ async function load(page = 0) {
 }
 
 byId('catalog-refresh').onclick = () => load();
+byId('specimen-data-close').addEventListener('click', () => byId('specimen-data-panel').close());
 if (marketView) {
   byId('market-link').setAttribute('aria-current', 'page');
   byId('market').hidden = false;

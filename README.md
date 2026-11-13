@@ -2,11 +2,12 @@
 
 <p align="center">
   <strong>Automatize a caça e as vendas no PokeIdle.io em até quatro contas próprias.</strong><br>
-  Windows e Docker · Painel em português · Monitoramento pelo celular
+  Windows e Docker · Deploy no Dokploy · Monitoramento pelo celular
 </p>
 
 <p align="center">
   <a href="#instalação">Instalar</a> ·
+  <a href="#deploy-no-dokploy">Deploy no Dokploy</a> ·
   <a href="#modos-de-caça">Modos de caça</a> ·
   <a href="#planejador-por-perfil">Planejador</a> ·
   <a href="#monitor-no-celular">Monitor no celular</a> ·
@@ -22,7 +23,7 @@
 1. Baixe e extraia o [ZIP do projeto](https://github.com/cristianpaxur/PokeIdle-Autopilot/archive/refs/heads/main.zip) no Windows.
 2. Abra **Instalar IdleBot.cmd**. O instalador prepara o Docker Desktop e abre o QR do monitor quando ele estiver disponível.
 3. Abra o [painel local](http://127.0.0.1:4097) com o usuário `idlebot` e a senha gerada no arquivo `.env.docker`, na pasta do projeto.
-4. Em cada perfil que quiser usar, clique em **Assumir controle**, entre na sua conta do PokeIdle.io e clique em **Devolver ao robô** quando o jogo carregar.
+4. Em cada perfil que quiser usar, abra **Ações → Operação → Assumir controle**, entre na sua conta do PokeIdle.io e clique em **Devolver ao robô** quando o jogo carregar.
 
 Se o Windows ou o Docker pedir uma confirmação ou reinício, conclua a etapa e execute o instalador novamente. O [guia de instalação](docs/instalacao.md) também explica como pedir a instalação a uma IA com acesso ao PC.
 
@@ -48,6 +49,10 @@ O instalador reconstrói o serviço Docker. As sessões de login e o histórico 
 
 </details>
 
+## Deploy no Dokploy
+
+Use o `Dockerfile` da raiz para rodar o IdleBot em um servidor Linux. A imagem já inclui Chromium e o acesso remoto aos perfis. O painel fica no seu domínio HTTPS, com login `idlebot` e senha configurada no Dokploy. A seção [Configurar a aplicação no Dokploy](docs/instalacao.md#configurar-a-aplicação-no-dokploy) mostra o passo a passo, incluindo o volume persistente em `/data`.
+
 ## Modos de caça
 
 Escolha o **Modo de caça** em cada perfil. O painel salva a escolha entre sessões.
@@ -61,30 +66,33 @@ O bot usa a mediana de pelo menos três vendas comparáveis para cotar os anúnc
 
 ## Planejador por perfil
 
-Na aba **Caça**, abra **Planejador** no cartão do perfil. Ajuste as opções e clique em **Salvar preferências**. Os ajustes ficam no banco local e são mantidos ao atualizar o Docker.
+Na aba **Caça**, abra **Ações → Planejador** para ver a decisão atual, os próximos desbloqueios, os recursos reservados e os resultados confirmados. Para mudar o comportamento de uma conta, use **Ações → Preferências → Salvar preferências**. Os ajustes ficam no banco local e são preservados ao atualizar o Docker com o mesmo volume.
 
 | Seção | O que você pode ajustar |
 | --- | --- |
 | **Suprimentos** | Compra e uso de poções e revives, reserva de ouro, limite de gasto por hora, estoque desejado e limiar de HP para cura. |
+| **Captura** | Espécies elegíveis, seleção de bolas e teto de ouro por bola. |
 | **Progressão** | Evolução automática, tempo de busca de pedras e prioridade de XP durante eventos temporários. |
+| **Autonomia** | Passe, bicicleta, casas e XP Share, melhoria e preenchimento da equipe, incubação de ovos e fabricação com fragmentos da bolsa. |
 | **Ginásios** | Disputas automáticas a partir do nível 150 para melhorar o bônus de dano do Pokémon principal. Ajuste a margem de força e o limite de tentativas em 24 h. |
 | **Bosses** | Batalhas a partir do nível 300, conforme os requisitos de cada boss. Ajuste o nível mínimo por integrante, a reserva de fichas, o limite de tentativas e a duração máxima. |
+| **PvP, Safári e raid semanal** | Participação automática conforme nível, estoque e calendário. Ajuste tentativas, tempos de espera e reservas. |
 
-Ginásios e bosses vêm ativados no modo **Progressão e Outland**. Por padrão, cada atividade tem até duas tentativas em 24 h, e o bot mantém uma ficha de boss em reserva. O modo **Shiny** mantém o foco na caça. O Planejador mostra a decisão atual, o motivo e o histórico de tentativas. [Regras de progressão](docs/pokeidle.md#planejador-por-conta) · [Critérios para ginásios e bosses](docs/pokeidle.md#ginásios-e-bosses)
+O Mercado preserva recursos e Pokémon que o Planejador precisa para suas próximas ações. Abra **Ações → Ginásios e bosses** para ver também as avaliações e o histórico de PvP, Safári e raids. [Mapa de estratégia e cobertura](docs/estrategia.md) · [Regras de captura](docs/pokeidle.md#captura-e-escolha-de-bolas)
 
 ## Painel
 
 O painel e o monitor usam o tema Pokédex. O botão de som no cabeçalho ativa ou silencia os cliques de 8 bits e salva a preferência no navegador.
 
-- **Caça** mostra a rota, o estado e a tela de cada perfil. Alterne entre **24 h** e **7 dias** para acompanhar tempo de caça, drops, encontros e vendas. Na progressão, abra **XP das hunts** para comparar rotas. Consulte **Atenção** quando um perfil precisar de ação ou estiver tentando se recuperar. No Docker, **Ver 4 telas** abre o mosaico.
+- **Caça** mostra a rota, o estado, as métricas e a prévia de cada perfil quando disponível. Abra **Ações** para operar a sessão ou consultar os dados de caça e mercado. Alterne entre **24 h** e **7 dias** para acompanhar tempo de caça, drops, encontros e vendas. Na progressão, abra **Ações → XP das hunts** para comparar rotas. Consulte **Atenção** quando um perfil precisar de ação ou estiver tentando se recuperar. No Docker, **Ver 4 telas** abre o mosaico.
 - **Meus Pokémon** reúne os Pokémon da equipe, do Depot e da Coleção por perfil. Busque por nome, apelido ou ID e abra a ficha de um exemplar para ver seus atributos.
 - **Mercado** consulta os anúncios ativos de itens e Pokémon, com filtros de busca e moeda e preços por unidade em Coins e Gemas. Deixe pelo menos um perfil conectado ao jogo sob controle do robô para consultar.
 
 ## Monitor no celular
 
-Escaneie o QR que o instalador abre no PC. Pelo navegador do celular, acompanhe as métricas de cada perfil, os avisos, a decisão do Planejador e as transmissões disponíveis. O monitor é somente leitura e funciona pelo Wi-Fi, 4G ou 5G enquanto o PC e o Docker estiverem ativos.
+Escaneie o QR que o instalador abre no PC ou exiba-o pelo botão **QR do celular** no painel. Pelo navegador do celular, acompanhe as métricas de cada perfil, os avisos, a decisão do Planejador e as transmissões disponíveis. O monitor é somente leitura e funciona pelo Wi-Fi, 4G ou 5G enquanto o contêiner estiver ativo.
 
-Clique em **QR do celular** no painel do PC para exibir o código novamente. Se o endereço temporário mudar, escaneie o código atualizado. Guarde o QR para uso próprio, pois ele dá acesso ao monitor.
+Se o endereço temporário mudar, abra **QR do celular** e escaneie o código atualizado. Guarde o QR para uso próprio, pois ele dá acesso ao monitor.
 
 ## Configuração e desenvolvimento
 

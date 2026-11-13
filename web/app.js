@@ -18,6 +18,7 @@ const labels = {
   recovering: 'Recuperando', warning: 'Atenção',
 };
 const cards = new Map();
+const panels = new Map();
 const screens = new Map();
 const controlTokens = new Map();
 let remote = false;
@@ -45,7 +46,8 @@ async function command(id, action) {
 }
 
 function feedback(error) {
-  const message = byId('remote-dialog').open ? byId('remote-feedback') : byId('feedback');
+  const message = byId('remote-dialog').open ? byId('remote-feedback')
+    : document.querySelector('.profile-panel[open] .profile-feedback') ?? byId('feedback');
   message.textContent = error?.message ?? '';
   message.hidden = !error;
 }
@@ -79,36 +81,28 @@ async function act(id, action) {
   }
 }
 
-function makeCard(id) {
-  const card = document.createElement('article');
-  card.className = 'profile operation-profile';
-  card.id = `profile-${id}`;
-  card.innerHTML = `<div class="profile-top">
-      <div class="profile-identity">
-        <span class="profile-art" aria-hidden="true" hidden></span>
-        <div><h3></h3><p class="profile-pokemon" hidden></p></div>
-      </div>
-      <span class="status"></span>
-    </div>
-    <div class="profile-info">
-      <div class="profile-route"><strong data-stat="hunt"></strong><small data-stat="activity"></small></div>
-      <div class="level-meter" hidden>
-        <span></span><progress max="150" aria-label="Nível do treinador para liberar Outland"></progress>
-      </div>
-      <p class="profile-note"></p>
-      <div class="profile-planner" hidden></div>
-      <div class="profile-stat phase-stats"></div>
-      <details class="hunt-comparison" hidden>
-        <summary>XP das hunts</summary>
-        <p data-optimizer-note></p>
-        <ol data-hunt-ranking></ol>
-      </details>
-      <details class="profile-market" hidden>
-        <summary></summary>
-        <p class="market-note"></p>
-        <ul class="item-stock"></ul>
-      </details>
-      <div class="profile-actions">
+const profileSections = [
+  ['operation', 'Operação'], ['planner', 'Planejador'],
+  ['activities', 'Ginásios e bosses'], ['preferences', 'Preferências'],
+  ['ranking', 'XP das hunts'], ['market', 'Mercado'],
+];
+
+function makePanel(id) {
+  const dialog = document.createElement('dialog');
+  dialog.className = 'action-panel profile-panel';
+  dialog.id = `profile-panel-${id}`;
+  dialog.setAttribute('aria-labelledby', `${dialog.id}-title`);
+  dialog.innerHTML = `<header class="action-panel-header">
+      <h2 id="${dialog.id}-title">${profileName(id)}</h2>
+      <button type="button" data-close-panel autofocus>Voltar aos perfis</button>
+    </header>
+    <nav class="action-panel-menu" aria-label="Ações de ${profileName(id)}">
+      ${profileSections.map(([key, label]) => `<button type="button" data-section="${key}" aria-controls="${dialog.id}-${key}" aria-pressed="false">${label}</button>`).join('')}
+    </nav>
+    <p class="feedback profile-feedback" role="status" hidden></p>
+    <div class="action-panel-content">
+      <section data-page="operation" id="${dialog.id}-operation" hidden>
+        <h3>Operação</h3>
         <label class="profile-mode">Modo de caça
           <select data-mode aria-label="Modo de caça, ${profileName(id)}">
             <option value="farm">Progressão e Outland</option>
@@ -116,17 +110,98 @@ function makeCard(id) {
           </select>
         </label>
         <div class="profile-controls">
-        <button type="button" data-action="start">Abrir</button>
-        <button type="button" data-action="pause">Pausar</button>
-        <button type="button" data-action="focus">Ver jogo</button>
-        <button type="button" data-action="take" hidden>Assumir controle</button>
-        <button type="button" data-action="release" hidden>Devolver ao robô</button>
-        <button type="button" data-action="stop">Fechar</button>
+          <button type="button" data-action="start">Abrir</button>
+          <button type="button" data-action="pause">Pausar</button>
+          <button type="button" data-action="take" hidden>Assumir controle</button>
+          <button type="button" data-action="release" hidden>Devolver ao robô</button>
+          <button type="button" data-action="stop">Fechar perfil</button>
         </div>
+      </section>
+      <section class="profile-planner" data-page="planner" id="${dialog.id}-planner" hidden></section>
+      <section class="profile-planner" data-page="activities" id="${dialog.id}-activities" hidden></section>
+      <section class="profile-planner" data-page="preferences" id="${dialog.id}-preferences" hidden></section>
+      <section class="hunt-comparison" data-page="ranking" id="${dialog.id}-ranking" hidden>
+        <h3>XP das hunts</h3>
+        <p data-optimizer-note></p>
+        <ol data-hunt-ranking></ol>
+      </section>
+      <section class="profile-market" data-page="market" id="${dialog.id}-market" hidden>
+        <h3>Mercado do perfil</h3>
+        <p class="market-total"></p>
+        <p class="market-note"></p>
+        <ul class="item-stock"></ul>
+      </section>
+    </div>`;
+  const menu = [...dialog.querySelectorAll('[data-section]')];
+  const pages = [...dialog.querySelectorAll('[data-page]')];
+  const planner = attachPlanner({
+    overview: dialog.querySelector('[data-page="planner"]'),
+    activities: dialog.querySelector('[data-page="activities"]'),
+    preferences: dialog.querySelector('[data-page="preferences"]'),
+  }, id);
+  let current;
+  function select(key) {
+    current = key;
+    for (const button of menu) button.setAttribute('aria-pressed', String(button.dataset.section === key));
+    for (const page of pages) page.hidden = page.dataset.page !== key;
+    dialog.querySelector('.action-panel-content').scrollTop = 0;
+  }
+  for (const button of menu) button.addEventListener('click', () => select(button.dataset.section));
+  dialog.querySelector('[data-close-panel]').addEventListener('click', () => dialog.close());
+  document.body.append(dialog);
+  return {
+    dialog, planner,
+    open() {
+      dialog.querySelector('.profile-feedback').hidden = true;
+      select('operation');
+      dialog.showModal();
+      menu[0].focus();
+    },
+    update(profile) {
+      dialog.querySelector('h2').textContent = profile.account || profileName(id);
+      for (const button of menu) {
+        const section = button.dataset.section;
+        button.hidden = (['planner', 'activities', 'preferences'].includes(section) && !profile.planner)
+          || (section === 'ranking' && profile.phase !== 'progression');
+        if (button.hidden && current === section) {
+          select('operation');
+          if (dialog.open) menu[0].focus();
+        }
+      }
+    },
+  };
+}
+
+function makeCard(id) {
+  const card = document.createElement('article');
+  card.className = 'profile operation-profile';
+  card.id = `profile-${id}`;
+  const panel = makePanel(id);
+  const { dialog } = panel;
+  card.innerHTML = `<div class="profile-top">
+      <div class="profile-identity">
+        <span class="profile-art" aria-hidden="true" hidden></span>
+        <div><h3></h3><p class="profile-pokemon" hidden></p></div>
       </div>
+      <span class="status"></span>
     </div>
-    <div class="view" data-screen-profile="${id}" hidden><small>Prévia da caça</small></div>`;
-  card.querySelectorAll('[data-action]').forEach((button) => {
+    <div class="view" data-screen-profile="${id}" hidden><small>Prévia da caça</small></div>
+    <div class="profile-info">
+      <div class="profile-route"><strong data-stat="hunt"></strong><small data-stat="activity"></small></div>
+      <div class="level-meter" hidden>
+        <span></span><progress max="150" aria-label="Nível do treinador para liberar Outland"></progress>
+      </div>
+      <p class="profile-note" hidden></p>
+      <div class="profile-stat phase-stats"></div>
+      <div class="profile-controls">
+        <button type="button" data-action="focus">Ver jogo</button>
+        <button type="button" class="profile-menu-trigger" aria-haspopup="dialog" aria-controls="${dialog.id}">Ações</button>
+      </div>
+    </div>`;
+  const trigger = card.querySelector('.profile-menu-trigger');
+  trigger.setAttribute('aria-label', `Ações, ${profileName(id)}`);
+  trigger.addEventListener('click', panel.open);
+  [...card.querySelectorAll('[data-action]'), ...dialog.querySelectorAll('[data-action]')].forEach((button) => {
     button.setAttribute('aria-label', `${button.textContent}, ${profileName(id)}`);
     button.addEventListener('click', async () => {
       try {
@@ -141,7 +216,7 @@ function makeCard(id) {
       }
     });
   });
-  const mode = card.querySelector('[data-mode]');
+  const mode = dialog.querySelector('[data-mode]');
   mode.addEventListener('change', async () => {
     mode.dataset.saving = '1';
     mode.disabled = true;
@@ -158,15 +233,17 @@ function makeCard(id) {
       mode.disabled = ['manual', 'pausing'].includes(profile?.control);
     }
   });
-  attachPlanner(card.querySelector('.profile-planner'), id);
   byId('profiles').append(card);
   cards.set(id, card);
+  panels.set(id, panel);
   visibility.observe(card.querySelector('.view'));
   return card;
 }
 
 function renderCard(profile) {
   const card = cards.get(profile.id) ?? makeCard(profile.id);
+  const panel = panels.get(profile.id);
+  const { dialog } = panel;
   const nick = card.querySelector('h3');
   nick.textContent = profile.account || profileName(profile.id);
   nick.title = nick.textContent;
@@ -206,7 +283,8 @@ function renderCard(profile) {
   profileNote.textContent = profile.attention?.text ?? profile.note ?? '';
   profileNote.hidden = !profile.attention && !['waiting', 'opening'].includes(profile.status)
     && !(profile.phase === 'shiny' && profile.active && profile.balls === 0);
-  renderPlanner(card.querySelector('.profile-planner'), profile);
+  panel.update(profile);
+  renderPlanner(panel.planner, profile);
   const route = [phaseLabels[profile.phase], profile.hunt?.replaceAll('-', ' ')].filter(Boolean);
   card.querySelector('[data-stat="hunt"]').textContent = route.join(' · ') || 'Sem rota ativa';
   card.querySelector('[data-stat="activity"]').textContent = profile.active ? progressAge(profile.lastProgressAt) : '';
@@ -220,17 +298,16 @@ function renderCard(profile) {
   const stats = phaseStats(profile, period.value);
   if (profile.phase === 'shiny' && profile.balls != null) stats.push(`${number(profile.balls)} bolas na bolsa`);
   card.querySelector('.phase-stats').replaceChildren(...stats.map(stat));
-  renderMarket(card, profile);
+  renderMarket(dialog, profile);
   const optimizer = profile.huntOptimizer;
-  card.querySelector('.hunt-comparison').hidden = profile.phase !== 'progression';
   const trial = optimizer?.trial;
-  const note = card.querySelector('[data-optimizer-note]');
+  const note = dialog.querySelector('[data-optimizer-note]');
   note.textContent = trial
     ? `${optimizer.stage === 'best' ? 'Melhor medida' : 'Medindo'} · ${trial.slug.replaceAll('-', ' ')} · ${Math.floor(trial.elapsedMs / 1000)} s`
     : 'Aguardando uma medição de caça.';
   const observations = [...(optimizer?.ranking ?? []),
     ...(optimizer?.rejected ?? []).map((row) => ({ ...row, rejected: true }))];
-  card.querySelector('[data-hunt-ranking]').replaceChildren(...observations.map((sample) => {
+  dialog.querySelector('[data-hunt-ranking]').replaceChildren(...observations.map((sample) => {
     const item = document.createElement('li');
     item.textContent = `${sample.slug.replaceAll('-', ' ')} · ${number(Math.round(sample.trainerXpPerHour))} XP treinador/h`
       + ` · ${number(Math.round(sample.pokemonXpPerHour))} XP principal/h · ${sample.faints} desmaios`
@@ -238,26 +315,27 @@ function renderCard(profile) {
       + (sample.rejected ? ' · Descartada por desmaios' : '');
     return item;
   }));
-  const mode = card.querySelector('[data-mode]');
+  const mode = dialog.querySelector('[data-mode]');
   if (!mode.dataset.saving) mode.value = profile.mode;
   mode.disabled = Boolean(mode.dataset.saving) || manual || changing;
   renderPreview(profile, card.querySelector('.view'));
-  const start = card.querySelector('[data-action="start"]');
+  const start = dialog.querySelector('[data-action="start"]');
   start.textContent = profile.status === 'login' ? 'Entrar' : profile.paused && profile.active ? 'Retomar' : 'Abrir';
   start.setAttribute('aria-label', `${start.textContent}, ${profileName(profile.id)}`);
   start.disabled = manual || changing || (profile.active && !profile.paused && profile.status !== 'login');
   start.hidden = start.disabled;
-  card.querySelector('[data-action="pause"]').disabled = manual || changing || !profile.active || profile.paused || profile.status === 'native-login';
+  dialog.querySelector('[data-action="pause"]').disabled = manual || changing || !profile.active || profile.paused || profile.status === 'native-login';
   const focus = card.querySelector('[data-action="focus"]');
   const focusLabel = manual && controlTokens.has(profile.id) ? 'Abrir controle' : 'Ver jogo';
   focus.textContent = focusLabel;
   focus.setAttribute('aria-label', `${focusLabel}, ${profileName(profile.id)}`);
+  focus.hidden = !profile.active;
   focus.disabled = !profile.active || (!remote && ['opening', 'native-login'].includes(profile.status));
-  const take = card.querySelector('[data-action="take"]');
+  const take = dialog.querySelector('[data-action="take"]');
   take.hidden = !remote || manual;
   take.disabled = !profile.active || changing;
-  card.querySelector('[data-action="release"]').hidden = !remote || !manual;
-  card.querySelector('[data-action="stop"]').disabled = manual || changing || !profile.active;
+  dialog.querySelector('[data-action="release"]').hidden = !remote || !manual;
+  dialog.querySelector('[data-action="stop"]').disabled = manual || changing || !profile.active;
 }
 
 function renderPreview(profile, view) {
@@ -282,7 +360,7 @@ function renderPreview(profile, view) {
     view.querySelector('img')?.remove();
     delete view.dataset.version;
     placeholder.hidden = false;
-    placeholder.textContent = 'Aguardando a primeira prévia da caça…';
+    placeholder.textContent = profile.active ? 'Aguardando a primeira prévia da caça…' : 'Perfil fechado';
     return;
   }
   if (!visible || view.dataset.version === String(profile.preview)) return;
@@ -298,14 +376,13 @@ function renderPreview(profile, view) {
   image.src = `/api/profiles/${profile.id}/preview?v=${profile.preview}`;
 }
 
-function renderMarket(card, profile) {
-  const market = card.querySelector('.profile-market');
+function renderMarket(dialog, profile) {
+  const market = dialog.querySelector('.profile-market');
   const inventory = profile.itemStock?.items ?? [];
   const listings = profile.openListings ?? 0;
   const status = profile.marketStatus;
-  market.hidden = !inventory.length && !listings && !status;
-  market.querySelector('summary').textContent = [
-    `Mercado · ${number(listings)} em anúncio`,
+  market.querySelector('.market-total').textContent = [
+    `${number(listings)} em anúncio`,
     ...(inventory.length ? [`${number(inventory.reduce((sum, item) => sum + item.quantity, 0))} drops na bolsa`] : []),
   ].join(' · ');
   market.querySelector('.market-note').textContent = status

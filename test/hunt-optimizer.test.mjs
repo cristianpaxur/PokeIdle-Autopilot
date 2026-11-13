@@ -62,6 +62,17 @@ test('suspension and a new Pokémon exclude manual XP and incompatible samples',
   assert.deepEqual(optimizer.snapshot().ranking, []);
 });
 
+test('changing bicycle speed discards measurements made with the previous equipment', () => {
+  const { optimizer, player, observe } = setup();
+  optimizer.choose(hunts, player, 0); observe(0);
+  player.xp += 90; observe(90_000);
+  optimizer.choose(hunts, player, 90_000);
+  assert.equal(optimizer.snapshot().ranking.length, 1);
+  player.bicicleta = { equipada: 5, equipadaRar: 'rara' };
+  observe(91_000);
+  assert.equal(optimizer.snapshot().ranking.length, 0);
+});
+
 test('completed observations survive a restart while a blocked hunt cannot win', () => {
   const { optimizer, saved, player, observe } = setup();
   optimizer.choose(hunts, player, 0); observe(0);

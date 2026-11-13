@@ -1,5 +1,11 @@
-.git
-node_modules
-.env*
-idlebot.local.json
-*.sqlite*
+**
+!package.json
+!package-lock.json
+!src/
+!src/*.mjs
+!web/
+!web/*.css
+!web/*.html
+!web/*.js
+!docker/
+!docker/start.sh
