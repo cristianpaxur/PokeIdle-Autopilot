@@ -140,6 +140,41 @@ function setPages(current, total, select) {
   byId('page-next').onclick = () => select(current + 1);
 }
 
+function pokemonCard(profile, pokemon) {
+  const entry = element('li');
+  const link = element('a', null, 'pokemon-card');
+  link.href = `/pokemon/${profile.id}/${pokemon.id}`;
+  if (link.pathname === location.pathname) link.setAttribute('aria-current', 'page');
+  const header = element('div', null, 'pokemon-card-header');
+  const portrait = element('div', null, 'pokemon-card-art');
+  portrait.setAttribute('aria-hidden', 'true');
+  portrait.append(specimenPortrait(pokemon, 150, 'lazy'));
+  if (Number.isInteger(pokemon.speciesId)) {
+    portrait.append(element('span', `#${String(pokemon.speciesId).padStart(4, '0')}`, 'specimen-number'));
+  }
+  const body = element('span', null, 'pokemon-card-body');
+  body.append(element('strong', displayName(pokemon)));
+  if (pokemon.nickname) body.append(element('small', pokemon.name));
+  body.append(element('small', `${profileName(profile)} · ${locations[pokemon.location] ?? 'Coleção'}`));
+  const types = pokemon.types?.length ? pokemon.types : speciesOf(pokemon)?.types ?? [];
+  if (types.length) {
+    const badges = element('span', null, 'pokemon-types');
+    for (const type of types) {
+      const badge = element('span', typesPt[String(type).toUpperCase()] ?? type, 'pokemon-type');
+      badge.dataset.type = String(type).toLowerCase();
+      badges.append(badge);
+    }
+    body.append(badges);
+  }
+  if (pokemon.shiny) body.append(element('span', 'Shiny', 'shiny-badge'));
+  header.append(portrait, body);
+  const metrics = element('dl', null, 'pokemon-card-metrics');
+  metrics.append(...metricCells(primaryMetrics(pokemon)));
+  link.append(header, metrics);
+  entry.append(link);
+  return entry;
+}
+
 function renderCollection() {
   const profileFilter = byId('profile-filter').value;
   const locationFilter = byId('location-filter').value;
@@ -160,26 +195,8 @@ function renderCollection() {
     return displayName(left).localeCompare(displayName(right), 'pt-BR') || left.id - right.id;
   });
   const grid = byId('pokemon-grid');
-  grid.replaceChildren(...filtered.slice(pageIndex * collectionSize, (pageIndex + 1) * collectionSize).map(({ profile, pokemon }) => {
-    const entry = element('li');
-    const link = element('a', null, 'pokemon-card');
-    link.href = `/pokemon/${profile.id}/${pokemon.id}`;
-    const header = element('div', null, 'pokemon-card-header');
-    const portrait = element('div', null, 'pokemon-card-art');
-    portrait.setAttribute('aria-hidden', 'true');
-    portrait.append(specimenPortrait(pokemon, 76, 'lazy'));
-    const body = element('span', null, 'pokemon-card-body');
-    body.append(element('strong', displayName(pokemon)));
-    if (pokemon.nickname) body.append(element('small', pokemon.name));
-    body.append(element('small', `${profileName(profile)} · ${locations[pokemon.location]}`));
-    if (pokemon.shiny) body.append(element('span', 'Shiny', 'shiny-badge'));
-    header.append(portrait, body);
-    const metrics = element('dl', null, 'pokemon-card-metrics');
-    metrics.append(...metricCells(primaryMetrics(pokemon)));
-    link.append(header, metrics);
-    entry.append(link);
-    return entry;
-  }));
+  grid.replaceChildren(...filtered.slice(pageIndex * collectionSize, (pageIndex + 1) * collectionSize)
+    .map(({ profile, pokemon }) => pokemonCard(profile, pokemon)));
   byId('profile-status').textContent = selected.map((profile) => `${profileName(profile)} · ${profileStatus(profile)}`).join('  •  ');
   byId('catalog-status').textContent = selected.every(({ updatedAt }) => updatedAt == null)
     ? 'Abra um perfil na aba Caça e entre no PokeIdle para sincronizar a coleção.'
@@ -200,6 +217,23 @@ async function loadCollection() {
   if (profiles.some(({ id }) => String(id) === previous)) select.value = previous;
   pageIndex = 0;
   renderCollection();
+}
+
+async function loadSpecimenBrowser() {
+  if (!matchMedia('(min-width: 1181px)').matches) return;
+  try {
+    const [data] = await Promise.all([readJson('/api/collection'), atlasReady]);
+    const entries = data.profiles.flatMap((profile) => profile.pokemon.map((pokemon) => ({ profile, pokemon })));
+    const selected = ({ profile, pokemon }) => String(profile.id) === detailPath[1] && String(pokemon.id) === detailPath[2];
+    entries.sort((left, right) => Number(selected(right)) - Number(selected(left)));
+    byId('specimen-list').replaceChildren(...entries.slice(0, 6).map(({ profile, pokemon }) => pokemonCard(profile, pokemon)));
+    byId('specimen-browser').hidden = !entries.length;
+    document.querySelector('main.catalog').classList.toggle('has-specimen', entries.length > 0);
+  } catch {
+    // A collection read failure must not hide a successfully loaded specimen.
+    byId('specimen-browser').hidden = true;
+    document.querySelector('main.catalog').classList.remove('has-specimen');
+  }
 }
 
 const statLabels = { hp: 'HP', atk: 'Ataque', def: 'Defesa', spAtk: 'Ataque especial', spDef: 'Defesa especial', speed: 'Velocidade' };
@@ -230,7 +264,11 @@ function renderSpecimenSummary(pokemon, types, rarity) {
     art.dataset.portrait = portraitKey;
   }
   byId('specimen-badges').replaceChildren(
-    ...types.map((type) => element('li', typesPt[String(type).toUpperCase()] ?? type, 'specimen-type')),
+    ...types.map((type) => {
+      const badge = element('li', typesPt[String(type).toUpperCase()] ?? type, 'specimen-type');
+      badge.dataset.type = String(type).toLowerCase();
+      return badge;
+    }),
     ...(rarity ? [element('li', rarity)] : []),
     ...(pokemon.shiny ? [element('li', 'Shiny', 'specimen-shiny')] : []),
   );
@@ -385,7 +423,7 @@ async function load(page = 0) {
   }
   try {
     if (marketView) await loadMarket(page, current);
-    else if (detailPath) await loadSpecimen();
+    else if (detailPath) await Promise.all([loadSpecimen(), loadSpecimenBrowser()]);
     else await loadCollection();
   } catch (error) {
     if (current !== requestId) return;

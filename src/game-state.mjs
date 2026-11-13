@@ -16,6 +16,11 @@ export class GameState {
   player = null;
   market = null;
   hunts = [];
+  bosses = [];
+  gymInfo = null;
+  gymInfoAt = 0;
+  gymPanel = null;
+  gymPanelAt = 0;
   balls = [];
   items = [];
   pokemon = new Map();
@@ -31,6 +36,7 @@ export class GameState {
   switchAfter = 0;
   lastFrameAt = null;
   lastProgressAt = null;
+  serverOffset = 0;
 
   consume(message, now = Date.now()) {
     this.lastFrameAt = now;
@@ -38,6 +44,11 @@ export class GameState {
       this.lastProgressAt = null;
       this.market = message.mercado ?? null;
       this.hunts = message.hunts ?? [];
+      this.bosses = Array.isArray(message.bossesJogaveis) ? message.bossesJogaveis : [];
+      this.gymInfo = null;
+      this.gymInfoAt = 0;
+      this.gymPanel = null;
+      this.gymPanelAt = 0;
       this.balls = message.catalogoBolas ?? [];
       this.items = message.itensNossos ?? [];
       this.shinyLooks = message.shinyLooks ?? {};
@@ -55,6 +66,16 @@ export class GameState {
     }
     if (message.t === 'estado') this.updatePlayer(message.estado, false, now);
     if (message.t === 'orbs') this.panel = message;
+    if (message.t === 'ginasio') {
+      if (message.info) {
+        this.gymInfo = message.info;
+        this.gymInfoAt = now;
+      }
+      if (message.painel) {
+        this.gymPanel = message.painel;
+        this.gymPanelAt = now;
+      }
+    }
     if (message.t !== 'batalha' || !Array.isArray(message.ev)) return [];
     for (const event of message.ev) this.trackHunt(event, now);
     return message.ev.filter((event) => event.k === 'capturado').map((event) => pokemonFrom(event.pokemon)).filter(Boolean);
@@ -62,6 +83,7 @@ export class GameState {
 
   updatePlayer(delta, reset, now) {
     if (!delta) return;
+    if (Number.isFinite(delta.servidorAgora)) this.serverOffset = delta.servidorAgora - now;
     const previousXp = this.player?.xp;
     const previousLevel = this.player?.level;
     const { cheio, pokemons, pkMud, pkFora, dexMud, dexFora, pokedex, ...fields } = delta;
@@ -137,6 +159,10 @@ export class GameState {
 
   canSwitchHunt(now) {
     return now >= this.switchAfter && (this.player?.noCentro || now >= (this.hunt?.fightUntil ?? 0));
+  }
+
+  serverNow(now = Date.now()) {
+    return now + this.serverOffset;
   }
 
   huntOptions(now) {

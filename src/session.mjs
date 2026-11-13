@@ -4,6 +4,8 @@ import { acceptGameUpdate, clickCapture, GAME_URL, GameBrowser, prepareListing, 
 import { GameState, pokemonFrom } from './game-state.mjs';
 import { pokemonAtlas } from './catalog.mjs';
 import { HuntOptimizer } from './hunt-optimizer.mjs';
+import { AccountPlanner } from './planner.mjs';
+import { gameBonuses } from './planning.mjs';
 import { openNativeLogin } from './native-login.mjs';
 import { farmPhase, hasShiny, identifyItemSale, isOutland, listingDecision, netGems, nextHunt,
   pickFarmHunt, quote, quoteItem, withdrawalAmount } from './policy.mjs';
@@ -18,12 +20,6 @@ const RECOVERY_WAIT_MS = 45_000;
 const awayFromHunt = (player) => player?.boss?.arena || player?.mistico || player?.safari?.dentro || player?.casa?.dentro;
 const inHunt = (player) => Boolean(player?.huntSlug && !player.noCentro
   && !player.boss?.arena && !player.mistico && !player.safari?.dentro && !player.casa?.dentro);
-// PokeIdle starter lines. The game publishes the required stones with the welcome frame.
-const starterEvolutions = {
-  1: { level: 40, target: 2, type: 'GRASS' }, 2: { level: 80, target: 3, type: 'GRASS' },
-  4: { level: 40, target: 5, type: 'FIRE' }, 5: { level: 80, target: 6, type: 'FIRE' },
-  7: { level: 40, target: 8, type: 'WATER' }, 8: { level: 80, target: 9, type: 'WATER' },
-};
 
 export class Session {
   state = new GameState();
@@ -55,6 +51,7 @@ export class Session {
       load: (context) => this.ledger.huntSamples(this.account, context),
       save: (sample) => this.ledger.saveHuntSample(this.account, sample),
     });
+    this.planner = new AccountPlanner(this);
   }
 
   update(status, note) {
@@ -63,16 +60,18 @@ export class Session {
     this.publish();
   }
 
-  async start() {
+  async start({ paused = false } = {}) {
     if (this.desired) {
       if (this.paused) this.monitorSince = Date.now();
       this.paused = false;
+      this.ledger.setPaused(this.config.id, false);
       if (this.status === 'login') this.attemptedNativeLogin = false;
       this.publish();
       return;
     }
     this.desired = true;
-    this.paused = false;
+    this.paused = paused;
+    this.ledger.setPaused(this.config.id, paused);
     this.monitorSince = Date.now();
     this.attemptedNativeLogin = false;
     this.task = this.run();
@@ -80,8 +79,11 @@ export class Session {
 
   pause() {
     this.optimizer.suspend();
+    this.planner.suspend();
     this.sampleFarm(false);
     this.paused = true;
+    this.ledger.setPaused(this.config.id, true);
+    this.planner.refresh();
     this.recovery = null;
     if (this.online) this.update('paused', 'Automação pausada. A janela do jogo continua aberta.');
   }
@@ -108,9 +110,11 @@ export class Session {
 
   async stop() {
     this.optimizer.suspend();
+    this.planner.suspend();
     this.sampleFarm(false);
     this.desired = false;
     this.online = false;
+    this.planner.refresh();
     this.preview = null;
     if (this.config.display && this.nativeBrowser?.exitCode === null) this.nativeBrowser.kill('SIGTERM');
     await this.browser?.close().catch(() => {});
@@ -207,7 +211,9 @@ export class Session {
         this.attemptedNativeLogin = false;
         this.due = {};
         this.historyReady = false;
-        this.update('ready', 'Sessão autenticada.');
+        this.planner.suspend();
+        this.planner.activities.reset();
+        this.update(this.paused ? 'paused' : 'ready', this.paused ? 'Automação pausada. A janela do jogo continua aberta.' : 'Sessão autenticada.');
       }
       if (message.t === 'erro' && accountError.test(message.chave ?? '')) {
         this.sampleFarm(false);
@@ -217,12 +223,14 @@ export class Session {
       }
       if (!this.online || !this.account) return;
       const captures = message.t === 'welcome' ? [] : this.state.consume(message);
+      this.planner.record(message);
       if (message.t === 'batalha' && Array.isArray(message.ev) && this.active()
         && this.status === 'hunting' && this.onStrategyHunt()) {
         const player = this.state.player;
         this.ledger.recordFarm(this.account, this.phase(), player.huntSlug, this.state.farmEvents(message.ev));
       }
-      if (this.active() && this.phase() === 'progression' && message.t === 'batalha') {
+      if (this.active() && this.phase() === 'progression' && message.t === 'batalha'
+        && !this.planner.activities.interruptsHunt && !this.state.player?.boss?.arena) {
         this.optimizer.recordBattle(message.ev ?? []);
       }
       this.observeOptimization();
@@ -238,6 +246,7 @@ export class Session {
 
   disconnected() {
     this.optimizer.suspend();
+    this.planner.suspend();
     this.sampleFarm(false);
     this.online = false;
     this.monitorSince = Date.now();
@@ -255,6 +264,8 @@ export class Session {
     this.optimizer.suspend();
     this.ledger.setMode(this.config.id, mode);
     this.mode = mode;
+    this.planner.suspend();
+    this.planner.refresh();
     this.monitorSince = Date.now();
     this.recovery = null;
     this.marketStatus = null;
@@ -262,6 +273,16 @@ export class Session {
     this.due.auto = 0;
     this.due.market = 0;
     this.publish();
+  }
+
+  setPlannerSettings(value) {
+    const settings = this.planner.configure(value);
+    this.optimizer.suspend();
+    this.due.auto = 0;
+    this.due.supplies = 0;
+    this.due.hunt = 0;
+    this.publish();
+    return settings;
   }
 
   phase() {
@@ -287,6 +308,7 @@ export class Session {
   }
 
   onStrategyHunt() {
+    if (this.planner.activities.interruptsHunt) return false;
     const player = this.state.player;
     if (!inHunt(player)) return false;
     const hunt = this.state.hunts.find(({ slug }) => slug === player.huntSlug);
@@ -307,9 +329,11 @@ export class Session {
     const pokemon = this.state.pokemon.get(trained) ?? this.state.pokemon.get(player?.activeId);
     this.optimizer.observe({
       enabled: Boolean(this.account && this.active() && this.phase() === 'progression'
+        && !this.planner.route
+        && !this.planner.activities.interruptsHunt
         && !['blocked', 'setup'].includes(this.status) && !player?.boss?.arena && !player?.mistico
         && !player?.safari?.dentro && !player?.casa?.dentro),
-      player, pokemon,
+      player, pokemon, conditions: gameBonuses(player, this.state.serverNow()).context,
     });
   }
 
@@ -357,6 +381,9 @@ export class Session {
       if (this.status !== 'setup') this.update('setup', 'Conclua a configuração inicial da conta no jogo.');
       return;
     }
+    this.planner.refresh();
+    if (await this.planner.activities.run()) return;
+    if (player.boss?.arena) return;
     if (await this.recoverFarm()) return;
     if (player.noCentro && !player.boss?.arena && !player.mistico && !player.safari?.dentro && !player.casa?.dentro
       && [...this.state.pokemon.values()].some((pokemon) => pokemon.slot != null && pokemon.hp < pokemon.maxHp)) {
@@ -366,10 +393,10 @@ export class Session {
       return;
     }
     const phase = this.phase();
-    if (phase === 'progression' && !player.boss?.arena && !player.mistico && !player.safari?.dentro
+    if (await this.planner.buySupplies()) return;
+    if (phase !== 'shiny' && !player.boss?.arena && !player.mistico && !player.safari?.dentro
       && !player.casa?.dentro && await this.trainPokemon(player)) return;
-    const needsCaptures = phase === 'shiny';
-    if (this.elapsed('supplies', 25_000) && await this.refill(player, needsCaptures)) return;
+    if (await this.planner.activities.consider()) return;
     if (await this.setHunt(player)) return;
     if (this.active() && this.phase() === 'shiny' && this.onStrategyHunt() && !player.automation?.autoBallSemParar
       && !player.automation?.autoBallAteCapturar && this.elapsed('throw', 2800)) {
@@ -448,13 +475,7 @@ export class Session {
       return this.elapsed('trainingActive', 10_000)
         && this.browser.send({ t: 'team.active', pokemonId: Number(main.id) });
     }
-    const evolution = main.starter && !main.shiny && starterEvolutions[main.speciesId];
-    const stone = this.state.evolutionStones[evolution?.type]?.itemId;
-    if (evolution && main.level >= evolution.level && player.items?.[stone] > 0
-      && this.elapsed('evolve', 20_000)) {
-      return this.browser.send({ t: 'pokemon.evoluir', pokemonId: Number(main.id), alvoId: evolution.target });
-    }
-    return false;
+    return this.planner.evolve();
   }
 
   async updatePreview(page) {
@@ -473,22 +494,27 @@ export class Session {
     const automation = player.automation;
     const phase = this.phase();
     const stopBalls = phase !== 'shiny' && (automation?.autoBallSemParar || automation?.autoBallAteCapturar);
-    if (automation && (!automation.autoRevive || !automation.autoPotion || !automation.autoVoltarHunt || stopBalls)
-      && this.elapsed('auto', 180_000)) {
-      return this.browser.send({ t: 'auto.set', ...automation, autoRevive: true, autoPotion: true, autoVoltarHunt: true,
+    const managed = this.planner.supply?.automation ?? {};
+    const autoChanged = Object.entries(managed).some(([key, value]) => JSON.stringify(automation?.[key]) !== JSON.stringify(value));
+    if (!awayFromHunt(player) && automation && (autoChanged || !automation.autoVoltarHunt || stopBalls)
+      && this.elapsed('auto', 30_000)) {
+      return this.browser.send({ t: 'auto.set', ...automation, ...managed, autoVoltarHunt: true,
         ...(stopBalls ? { autoBallSemParar: false, autoBallAteCapturar: false } : {}) });
     }
     const now = Date.now();
     if (!this.state.canSwitchHunt(now) || now < (this.due.hunt ?? 0)) return false;
     const atlas = await pokemonAtlas().catch(() => null);
     if (!this.active() || this.state.player !== player || this.phase() !== phase) return false;
+    if (atlas?.species) this.planner.species = atlas.species;
+    this.planner.refresh(now);
     const trained = this.ledger.trainingPokemon(this.account);
     const pokemon = this.state.pokemon.get(trained) ?? this.state.pokemon.get(this.state.player.activeId);
     const species = atlas?.species ?? {};
     const options = this.state.huntOptions(now);
     const blocked = new Set([...options.blocked, ...this.optimizer.blockedHunts(now)]);
     const routeSamples = phase === 'progression' ? null : this.ledger.farmRoutes(this.account, phase, now);
-    const selected = nextHunt(this.state.hunts, player, {
+    const stone = this.planner.route;
+    const selected = stone ? (stone.slug !== player.huntSlug || player.noCentro ? stone : null) : nextHunt(this.state.hunts, player, {
       ...options, blocked, pinned: this.config.hunt, phase, shinyLooks: this.state.shinyLooks,
       species, typeChart: this.state.typeChart,
       attackTypes: pokemon?.tipos ?? species[pokemon?.speciesId]?.types ?? [],
@@ -497,24 +523,6 @@ export class Session {
     });
     if (!selected || !this.active() || !this.elapsed('hunt', 15_000)) return false;
     return this.browser.send({ t: 'hunt.select', slug: selected.slug });
-  }
-
-  async refill(player, needsCaptures) {
-    const available = player.gold - this.config.goldReserve;
-    if (!Number.isSafeInteger(available) || available <= 0) return false;
-    const cheapest = (items, price) => items.filter((item) => positiveInteger(item.id) && positiveInteger(item[price]))
-      .sort((first, second) => first[price] - second[price])[0];
-    const ball = needsCaptures ? cheapest(this.state.balls.filter((item) => item.compravel), 'priceGold') : null;
-    const potion = cheapest(this.state.items.filter((item) => item.category === 'heal'), 'npcPrice');
-    const revive = cheapest(this.state.items.filter((item) => item.category === 'revive'), 'npcPrice');
-    const supply = [
-      { item: ball, kind: 'ball', price: 'priceGold', have: Object.values(player.balls ?? {}).reduce((a, b) => a + b, 0), min: 8, batch: 40 },
-      { item: potion, kind: 'item', price: 'npcPrice', have: player.items?.[potion?.id] ?? 0, min: 3, batch: 12 },
-      { item: revive, kind: 'item', price: 'npcPrice', have: player.items?.[revive?.id] ?? 0, min: 2, batch: 6 },
-    ].find((entry) => entry.item && entry.have < entry.min && entry.item[entry.price] <= available);
-    if (!supply || !this.active()) return false;
-    const quantity = Math.min(supply.batch, Math.floor(available / supply.item[supply.price]));
-    return this.browser.send({ t: 'shop.buy', kind: supply.kind, id: supply.item.id, qty: quantity });
   }
 
   async askHistory(tab, filters, page = 0) {
@@ -870,6 +878,7 @@ export class Session {
       itemStock: player && account ? this.itemStock(player) : null,
       periods: account ? this.ledger.farmPeriods(account) : null,
       huntOptimizer: this.optimizer.snapshot(),
+      planner: this.planner.snapshot(),
       openListings: account ? this.ledger.openListings(account).length : 0,
       metrics: account ? this.ledger.metrics(account) : {},
       captures: account ? this.ledger.captures(account, 30) : [],

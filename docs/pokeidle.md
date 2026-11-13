@@ -29,6 +29,41 @@ O bot compara as rotas Shiny depois de pelo menos seis minutos de caça por rota
 O bot testa hunts liberadas com vantagem de tipo em janelas de 90 segundos. Compara o ganho líquido de XP do treinador por hora para acelerar a liberação da Outland e registra também o XP do Pokémon principal. Perdas de XP e tempo no Centro após desmaios entram na conta. As rotas bloqueadas por desmaios frequentes saem da seleção.
 
 Depois de testar até três candidatas, permanece cinco minutos na melhor medida antes de explorar outras. Reutiliza medições recentes de até 30 minutos, com o mesmo Pokémon e configuração e nível semelhante. Pausas, desconexões e controle manual encerram a janela em andamento. O painel mostra as observações em **XP das hunts**, e o banco local guarda as janelas concluídas para os próximos reinícios.
+
+## Planejador por conta
+
+Em cada perfil, **Planejador** permite ajustar compra e uso de poções e revives, reserva de ouro, limite de gasto nas últimas 60 minutos, estoque desejado em minutos, limiar de HP, evolução automática, busca de pedras e prioridade durante eventos. As preferências ficam no banco local e sobrevivem à atualização do Docker.
+
+O planejador primeiro verifica cura e suprimentos. Escolhe a poção pelo HP máximo e pelo custo da cura útil, mantendo opções de reserva na fila nativa. A quantidade considera o consumo observado, com estoque inicial mínimo e teto de 500 unidades por categoria. Poções fracas não substituem o estoque de cura adequada quando há uma opção viável. Cada compra tem intenção persistida antes do envio; confirmação pelo evento do jogo ou pelo inventário. Uma resposta ausente mantém o custo reservado e impede novo pedido até receber inventário recente, após dois minutos.
+
+Na estratégia Farm, mantém o Pokémon principal. Se nível e pedra estiverem disponíveis, solicita a evolução e confirma pela mudança de espécie. Sem pedra, procura hunts liberadas de espécies que soltam o item, começando por níveis menores; essa busca não exige vantagem de tipo. Dois desmaios bloqueiam a rota por dez minutos. Cada tentativa tem um limite configurável de tempo de caça; ao atingir o limite, volta à progressão por dez minutos antes de tentar novamente. A busca de pedra não entra no ranking de XP das hunts.
+
+As evoluções automáticas cobrem cadeias determinísticas de Kanto e Johto com requisitos conhecidos, incluindo Charmander, Squirtle e Bulbasaur. Evoluções ramificadas, shiny, variantes Outland e casos dependentes de regras não resolvidas de outra geração/teto de captura ficam fora da ação automática. Pedras são obtidas na caça: esta etapa não compra pedras nem gasta Gemas ou sacrifica Pokémon.
+
+Os eventos globais de XP já se aplicam automaticamente. O bot lê os multiplicadores publicados pelo servidor, suas fontes e vencimentos, e o dia sazonal. Com **Priorizar XP durante eventos temporários**, adia a busca de pedra durante um bônus global de XP do treinador; uma evolução com pedra já disponível continua prioritária. VIP e outros bônus permanentes não adiam a busca. Início, fim e mudanças de bônus ou dia sazonal reiniciam a comparação de hunts para não misturar condições diferentes. Ginásios e bosses também são adiados durante o evento, salvo quando **Permitir atividades durante eventos de XP** estiver ligado. Raids semanais, raids de guilda e eventos externos seguem fora do planejador.
+
+O motivo da decisão fica visível no cartão e no monitor do celular. Dentro do planejador aparecem estoque, gasto reservado, evolução, bônus e a última ação com seu estado de confirmação. Pausas e controle manual impedem ações; a preferência de pausa sobrevive à reinicialização.
+
+Regras conferidas no cliente público 1.420.0 em 12/11/2026: [Pokepédia](https://pokeidle.io/pokepedia.mjs), [ramificações e pedras](https://pokeidle.io/shared/evolucoes-ramificadas.mjs), [ajustes de evolução](https://pokeidle.io/shared/evolucoes-cruzadas.mjs).
+
+## Ginásios e bosses
+
+O painel separa as opções de suprimentos, progressão, ginásios e bosses. As avaliações de ambos os sistemas ficam disponíveis mesmo quando o objetivo atual é XP ou busca de pedra. Um limite de tentativas considera todas as intenções nas últimas 24 horas móveis, incluindo pendências e respostas incertas, e permanece salvo ao reiniciar.
+
+Os ginásios deste servidor são PvP assíncronos a partir do nível 150. O benefício é dano adicional para Pokémon do tipo correspondente: 25%, 10% e 5% para os três primeiros lugares; dois tipos usam o maior bônus, sem somar. O bot considera os tipos do principal e só age para melhorar seu bônus. Monta até cinco espécies distintas entre os Pokémon disponíveis, mantendo os registrados em outro ginásio. O registro não retira o Pokémon da hunt. O poder é calculado pelo helper oficial do jogo, no nível comprimido da arena, e a formação usa o posicionamento automático oficial.
+
+O bot pode registrar uma equipe para alcançar o pódio, assumir um ginásio vazio ou desafiar um líder quando o poder supera a margem configurada. Confirma o registro e relê o painel antes de desafiar. Não retira lideranças automaticamente. A margem de força é um critério conservador, não probabilidade de vitória: tipos e formação do adversário também influenciam a luta. O cooldown oficial de cada tipo é de 24 horas. Resultado é confirmado por `ginasio.desafio`, distinguindo vitória de transferência de liderança; resposta ausente bloqueia repetição automática.
+
+Os bosses jogáveis atuais começam no nível 300. O bot lê requisito do treinador, nível recomendado por membro, tamanho ideal da equipe e custo da ficha no catálogo recebido do jogo. Um Pokémon forte não compensa os demais abaixo do nível: o jogo calcula penalidade por membro. Exige a margem individual configurada, HP de pelo menos 80% em todos, vantagem ofensiva do principal e ausência de fraqueza defensiva. Usa somente fichas acima da reserva e nunca compra fichas nem gasta Gemas nessa atividade. Drops são incertos; elegibilidade não representa lucro em Gemas previsto.
+
+Cada boss é uma tentativa isolada: confirma a repetição nativa desligada antes de entrar, acompanha resultado e prazo, cura no Centro e confirma o retorno à hunt. A repetição nativa do jogo continua até após derrotas e desconexões; por isso não é usada pelo planejador. Ao atingir o prazo, solicita a saída, sem devolução da ficha. Derrota ou resultado incerto adia esse boss por 24 horas. Pausa/controle manual impedem novos comandos; uma batalha já enviada ao servidor pode continuar enquanto o robô está pausado.
+
+Padrões: ginásios e bosses ligados; até duas tentativas de cada nas últimas 24 h; margem de força de ginásio de 25%; nível individual de 120% do recomendado para boss; uma ficha de reserva; duração máxima de dez minutos; atividades durante eventos de XP desligadas. Shiny mantém seu objetivo e não inicia essas atividades. Batalhas de boss não entram nas métricas das hunts; mudanças no bônus de ginásio reiniciam a comparação de XP.
+
+Fontes oficiais 1.420.0: [ginásios e força](https://pokeidle.io/shared/ginasios.mjs), [formação do tabuleiro](https://pokeidle.io/shared/pvp-tabuleiro.mjs), [catálogo de bosses](https://pokeidle.io/shared/bosses-lendarios.mjs), [Pokepédia e regras de repetição](https://pokeidle.io/pokepedia.mjs), [protocolo do cliente](https://pokeidle.io/app.js?v=1.420.0).
+
+## Limites de operação
+
 - Sessões novas precisam de login e configuração inicial. O jogo também pode exigir reautenticação ou aceite de termos. Disponibilidade de compradores, comparáveis, ouro e Pokémon elegíveis determina o ritmo de venda. Com `marketEnabled: false`, o perfil deixa de criar anúncios.
 
 Os Termos permitem automação na caça e no Mercado dentro das mesmas regras do jogo, inclusive os limites de contas, de frequência e de negociação. [Termos de Uso](https://pokeidle.io/terms)

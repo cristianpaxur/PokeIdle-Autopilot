@@ -52,6 +52,16 @@ export class Ledger {
         profile INTEGER PRIMARY KEY,
         mode TEXT NOT NULL CHECK (mode IN ('farm', 'shiny'))
       ) STRICT;
+      CREATE TABLE IF NOT EXISTS planner_preferences (
+        profile INTEGER PRIMARY KEY, data TEXT NOT NULL
+      ) STRICT;
+      CREATE TABLE IF NOT EXISTS planner_state (
+        account TEXT PRIMARY KEY, data TEXT NOT NULL
+      ) STRICT;
+      CREATE TABLE IF NOT EXISTS profile_pauses (
+        profile INTEGER PRIMARY KEY, paused INTEGER NOT NULL CHECK (paused IN (0, 1))
+      ) STRICT;
+      CREATE INDEX IF NOT EXISTS operation_budget ON operations(account, kind, created_at);
       CREATE TABLE IF NOT EXISTS farm_stats (
         account TEXT PRIMARY KEY,
         hunt_ms INTEGER NOT NULL
@@ -114,6 +124,39 @@ export class Ledger {
 
   trainingPokemon(account) {
     return this.db.prepare('SELECT pokemon_id FROM training_pokemon WHERE account = ?').get(account)?.pokemon_id;
+  }
+
+  plannerPreferences(profile) {
+    const data = this.db.prepare('SELECT data FROM planner_preferences WHERE profile = ?').get(profile)?.data;
+    return data ? JSON.parse(data) : {};
+  }
+
+  setPlannerPreferences(profile, settings) {
+    this.db.prepare('INSERT OR REPLACE INTO planner_preferences VALUES (?, ?)').run(profile, JSON.stringify(settings));
+  }
+
+  plannerState(account) {
+    const data = account && this.db.prepare('SELECT data FROM planner_state WHERE account = ?').get(account)?.data;
+    return data ? JSON.parse(data) : {};
+  }
+
+  setPlannerState(account, state) {
+    if (account) this.db.prepare('INSERT OR REPLACE INTO planner_state VALUES (?, ?)').run(account, JSON.stringify(state));
+  }
+
+  supplySpent(account, now = Date.now()) {
+    if (!account) return 0;
+    return this.db.prepare(`SELECT coalesce(sum(json_extract(data, '$.cost')), 0) AS gold
+      FROM operations WHERE account = ? AND kind = 'supply' AND state != 'failed' AND created_at > ?`)
+      .get(account, now - HOUR).gold;
+  }
+
+  paused(profile) {
+    return Boolean(this.db.prepare('SELECT paused FROM profile_pauses WHERE profile = ?').get(profile)?.paused);
+  }
+
+  setPaused(profile, paused) {
+    this.db.prepare('INSERT OR REPLACE INTO profile_pauses VALUES (?, ?)').run(profile, Number(Boolean(paused)));
   }
 
   setTrainingPokemon(account, id) {

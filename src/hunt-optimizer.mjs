@@ -19,7 +19,7 @@ export class HuntOptimizer {
     this.save = save;
   }
 
-  observe({ enabled, player, pokemon }, now = Date.now()) {
+  observe({ enabled, player, pokemon, conditions }, now = Date.now()) {
     if (!enabled || !Number.isFinite(player?.xp) || !Number.isFinite(pokemon?.xp)) {
       this.suspend();
       return;
@@ -28,7 +28,9 @@ export class HuntOptimizer {
       pokemon.ivs, pokemon.refino, pokemon.heldItemId, pokemon.tmElemental, pokemon.tmAoe,
       now < (player.loja?.vipAte ?? 0), now < (player.loja?.boosts?.xp ?? 0),
       now < (player.loja?.boosts?.pokexp ?? 0), player.guildBonusPct ?? 0,
-      now < (player.guild?.boostAte ?? 0), player.automation?.autoPotion, player.automation?.autoRevive]);
+      now < (player.guild?.boostAte ?? 0), player.automation?.autoPotion, player.automation?.autoRevive,
+      player.automation?.hpLimiar, player.automation?.potionIds, player.automation?.reviveIds,
+      player.ginasiosPodio, player.ginasios, conditions]);
     if (context !== this.context) {
       this.suspend();
       this.context = context;

@@ -57,6 +57,10 @@ const dashboard = createDashboard({
         session.setMode(value);
         return;
       }
+      if (action === 'planner') {
+        await session.pendingTick?.catch(() => {});
+        return { settings: session.setPlannerSettings(value) };
+      }
       if (action !== 'focus') ledger.setEnabled(id, action === 'start');
       await session[action]();
     });
@@ -72,7 +76,9 @@ const dashboard = createDashboard({
 dashboard.server.listen(config.port, config.host, () => {
   console.log(`IdleBot • ${config.remote?.origin.origin ?? `http://127.0.0.1:${config.port}`}`);
   for (const session of sessions) {
-    if (ledger.enabled(session.config.id) ?? session.config.autoStart) void session.start();
+    if (ledger.enabled(session.config.id) ?? session.config.autoStart) {
+      void session.start({ paused: ledger.paused(session.config.id) });
+    }
   }
 });
 

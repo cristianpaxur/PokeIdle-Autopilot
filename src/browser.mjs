@@ -6,6 +6,7 @@ const GAME_ORIGIN = new URL(GAME_URL).origin;
 const GAME_SOCKET = 'wss://pokeidle.io/';
 const BUTTON_WAIT = 1800;
 const CAPTURE_WAIT = 4000;
+const GYM_DATA_WAIT = 4500;
 const click = (page, selector) => page.locator(selector).first().click({ timeout: BUTTON_WAIT });
 
 export async function acceptGameUpdate(page) {
@@ -85,7 +86,8 @@ function hookSocket({ key, origin, socketUrl }) {
   };
   const allowed = new Set(['hunt.select', 'centro.curar', 'auto.set', 'shop.buy', 'market.historico',
     'market.historicoGlobal', 'market.meus', 'market.listar', 'market.itens', 'market.item',
-    'market.criar', 'market.cancelar', 'pokemon.evoluir', 'team.active', 'orbs.painel']);
+    'market.criar', 'market.cancelar', 'pokemon.evoluir', 'team.active', 'orbs.painel',
+    'ginasio.info', 'ginasio.painel', 'ginasio.salvar', 'ginasio.desafiar', 'boss.auto', 'boss.entrar', 'boss.sair']);
   Object.defineProperty(window, key, {
     value: (message) => {
       if (!allowed.has(message.t) || connection?.readyState !== WebSocket.OPEN) return false;
@@ -137,6 +139,63 @@ export class GameBrowser {
   async send(message) {
     if (!this.page || !this.socket || new URL(this.page.url()).origin !== GAME_ORIGIN) return false;
     return this.page.evaluate(({ key, message }) => window[key]?.(message) === true, { key: this.key, message });
+  }
+
+  async gymData(pokemon, species, pokemonIds = []) {
+    let timer;
+    try {
+      if (!this.page || new URL(this.page.url()).origin !== GAME_ORIGIN
+        || !Array.isArray(pokemon) || !Array.isArray(pokemonIds) || pokemonIds.length > 5) return null;
+      const rows = pokemon.map((pk) => ({ pk, esp: species?.[pk?.speciesId]?.combat ?? null }));
+      const result = this.page.evaluate(async ({ origin, rows, pokemonIds }) => {
+        if (location.origin !== origin) return null;
+        const [{ poderNoGinasio }, { alcanceDaEspecie, casasDaEquipe }] = await Promise.all([
+          import('/shared/ginasios.mjs'), import('/shared/pvp-tabuleiro.mjs'),
+        ]);
+        if ([poderNoGinasio, alcanceDaEspecie, casasDaEquipe].some((helper) => typeof helper !== 'function')) return null;
+        const stats = ['hp', 'atk', 'def', 'spAtk', 'spDef', 'speed'];
+        const bases = ['baseHp', 'baseAtk', 'baseDef', 'baseSpAtk', 'baseSpDef', 'baseSpeed'];
+        const completeSpecies = (esp) => esp && bases.every((key) => Number.isFinite(esp[key]) && esp[key] > 0)
+          && typeof esp.type1 === 'string' && esp.type1.length > 0
+          && (esp.type2 == null || typeof esp.type2 === 'string')
+          && Array.isArray(esp.attacks) && esp.attacks.length > 0
+          && esp.attacks.every((attack) => attack && Number.isFinite(attack.power) && attack.power >= 0
+            && Number.isFinite(attack.cooldownMs) && attack.cooldownMs > 0
+            && Number.isFinite(attack.learnLevel) && attack.learnLevel >= 1
+            && ['PHYSICAL', 'SPECIAL', 'STATUS'].includes(attack.category)
+            && typeof attack.type === 'string' && attack.type.length > 0);
+        const ratings = {};
+        const entries = new Map();
+        for (const { pk, esp } of rows) {
+          const id = Number(pk?.id);
+          if (!Number.isSafeInteger(id) || id <= 0 || Number(esp?.pokeId) !== Number(pk?.speciesId)
+            || !completeSpecies(esp)) continue;
+          entries.set(id, esp);
+          if (!Number.isFinite(pk.level) || pk.level < 1
+            || !stats.every((key) => Number.isFinite(pk.ivs?.[key]) && pk.ivs[key] >= 0)) continue;
+          const power = poderNoGinasio(pk, esp);
+          if (!Number.isFinite(power) || power < 1) return null;
+          ratings[String(id)] = power;
+        }
+        const ids = pokemonIds.map(Number);
+        if (new Set(ids).size !== ids.length || ids.some((id) => !entries.has(id))) return null;
+        const casas = {};
+        if (ids.length) {
+          const ranges = ids.map((id) => alcanceDaEspecie(entries.get(id)));
+          if (ranges.some((range) => !Number.isInteger(range) || range < 1 || range > 4)) return null;
+          const houses = casasDaEquipe(Array(ids.length).fill(null), ranges);
+          if (!Array.isArray(houses) || houses.length !== ids.length || new Set(houses).size !== ids.length
+            || houses.some((house) => !Number.isInteger(house) || house < 0 || house >= 30)) return null;
+          ids.forEach((id, index) => { casas[String(id)] = houses[index]; });
+        }
+        return { ratings, casas };
+      }, { origin: GAME_ORIGIN, rows, pokemonIds });
+      return await Promise.race([result, new Promise((resolve) => { timer = setTimeout(() => resolve(null), GYM_DATA_WAIT); })]);
+    } catch {
+      return null;
+    } finally {
+      clearTimeout(timer);
+    }
   }
 
   async response(matches, action, timeout = 7000) {

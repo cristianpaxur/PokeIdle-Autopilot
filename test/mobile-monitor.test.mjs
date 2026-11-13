@@ -11,6 +11,8 @@ test('a QR opens the read-only monitor and protects status, screens, and robot c
     mode: 'farm', phase: 'outland', openListings: 3, metrics: { netGemsPerHour: 12.5 },
     attention: { kind: 'recovering', text: 'Tentando voltar à rota.', secret: 'private-attention' },
     periods: { today: { outland: { drops: 4 } } },
+    planner: { decision: { code: 'stone', title: 'Buscando Fire Stone', reason: 'Charmander pode evoluir.',
+      since: 100, secret: 'private-planner' }, settings: { secret: 'private-settings' } },
     withdrawals: [{ wallet: 'private-wallet' }] };
   const monitor = createMobileMonitor({
     snapshot: () => ({ profiles: [profile] }),
@@ -46,7 +48,8 @@ test('a QR opens the read-only monitor and protects status, screens, and robot c
   assert.equal(summary.openListings, 3);
   assert.deepEqual(summary.attention, { kind: 'recovering', text: 'Tentando voltar à rota.' });
   assert.equal(summary.periods.today.outland.drops, 4);
-  assert.doesNotMatch(paired.body, /private-name|private-wallet|private-attention/);
+  assert.deepEqual(summary.plannerDecision, { code: 'stone', title: 'Buscando Fire Stone', reason: 'Charmander pode evoluir.' });
+  assert.doesNotMatch(paired.body, /private-name|private-wallet|private-attention|private-planner|private-settings/);
   assert.equal((await http('/api/state', { Cookie: cookie })).status, 200);
   assert.equal((await http('/api/profiles/1/stop', { Cookie: cookie }, 'POST')).status, 405);
   assert.equal((await http('/api/state', { Cookie: cookie, Host: 'wrong.example' })).status, 403);

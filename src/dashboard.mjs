@@ -7,11 +7,14 @@ import { qrSvg, serveAsset } from './web-assets.mjs';
 const files = new Map([
   ['/', ['index.html', 'text/html; charset=utf-8']],
   ['/app.js', ['app.js', 'text/javascript; charset=utf-8']],
+  ['/planner.js', ['planner.js', 'text/javascript; charset=utf-8']],
   ['/profile-summary.js', ['profile-summary.js', 'text/javascript; charset=utf-8']],
   ['/colecao', ['catalog.html', 'text/html; charset=utf-8']],
   ['/mercado', ['catalog.html', 'text/html; charset=utf-8']],
   ['/catalog.js', ['catalog.js', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
+  ['/pokedex.css', ['pokedex.css', 'text/css; charset=utf-8']],
+  ['/pokedex.js', ['pokedex.js', 'text/javascript; charset=utf-8']],
   ['/remote.js', ['remote.js', 'text/javascript; charset=utf-8']],
 ]);
 
@@ -83,6 +86,23 @@ export function createDashboard({ snapshot, preview, command, remote, mobileQr, 
       }
       if (req.method === 'POST') {
         if (req.headers.origin !== origin || req.headers['x-idlebot'] !== '1') return res.writeHead(403).end();
+        const planner = pathname.match(/^\/api\/profiles\/([1-4])\/planner$/);
+        if (planner) {
+          if (!/^application\/json(?:;|$)/i.test(req.headers['content-type'] ?? '')) {
+            return json(res, { error: 'Envie as opções em JSON.' }, 415);
+          }
+          const chunks = [];
+          let bytes = 0;
+          for await (const chunk of req) {
+            bytes += chunk.length;
+            if (bytes > 8192) return json(res, { error: 'Opções muito extensas.' }, 413);
+            chunks.push(chunk);
+          }
+          let value;
+          try { value = JSON.parse(Buffer.concat(chunks).toString('utf8')); }
+          catch { return json(res, { error: 'Opções inválidas.' }, 400); }
+          return json(res, await command(Number(planner[1]), 'planner', value));
+        }
         const mode = pathname.match(/^\/api\/profiles\/([1-4])\/mode\/(farm|shiny)$/);
         if (mode) {
           await command(Number(mode[1]), 'mode', mode[2]);

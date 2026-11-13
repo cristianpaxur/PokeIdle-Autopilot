@@ -1,0 +1,519 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-11-12T22:29:07Z",
+  "title": "Design System: IdleBot — Pokédex",
+  "extensions": {
+    "colorMeta": {
+      "bg": {
+        "role": "neutral",
+        "displayName": "Marfim da tela",
+        "tonalRamp": [
+          "oklch(15% 0.0198 106.77)",
+          "oklch(26.4% 0.0198 106.77)",
+          "oklch(37.9% 0.0198 106.77)",
+          "oklch(49.3% 0.0198 106.77)",
+          "oklch(60.7% 0.0198 106.77)",
+          "oklch(72.1% 0.0198 106.77)",
+          "oklch(83.6% 0.0198 106.77)",
+          "oklch(95% 0.0198 106.77)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "LCD claro",
+        "tonalRamp": [
+          "oklch(15% 0.0286 119.93)",
+          "oklch(26.4% 0.0286 119.93)",
+          "oklch(37.9% 0.0286 119.93)",
+          "oklch(49.3% 0.0286 119.93)",
+          "oklch(60.7% 0.0286 119.93)",
+          "oklch(72.1% 0.0286 119.93)",
+          "oklch(83.6% 0.0286 119.93)",
+          "oklch(95% 0.0286 119.93)"
+        ]
+      },
+      "dark": {
+        "role": "neutral",
+        "displayName": "LCD profundo",
+        "tonalRamp": [
+          "oklch(15% 0.0392 124.68)",
+          "oklch(26.4% 0.0392 124.68)",
+          "oklch(37.9% 0.0392 124.68)",
+          "oklch(49.3% 0.0392 124.68)",
+          "oklch(60.7% 0.0392 124.68)",
+          "oklch(72.1% 0.0392 124.68)",
+          "oklch(83.6% 0.0392 124.68)",
+          "oklch(95% 0.0392 124.68)"
+        ]
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "Divisória verde",
+        "tonalRamp": [
+          "oklch(15% 0.0426 129.14)",
+          "oklch(26.4% 0.0426 129.14)",
+          "oklch(37.9% 0.0426 129.14)",
+          "oklch(49.3% 0.0426 129.14)",
+          "oklch(60.7% 0.0426 129.14)",
+          "oklch(72.1% 0.0426 129.14)",
+          "oklch(83.6% 0.0426 129.14)",
+          "oklch(95% 0.0426 129.14)"
+        ]
+      },
+      "text": {
+        "role": "neutral",
+        "displayName": "Tinta verde escura",
+        "tonalRamp": [
+          "oklch(15% 0.0309 168.09)",
+          "oklch(26.4% 0.0309 168.09)",
+          "oklch(37.9% 0.0309 168.09)",
+          "oklch(49.3% 0.0309 168.09)",
+          "oklch(60.7% 0.0309 168.09)",
+          "oklch(72.1% 0.0309 168.09)",
+          "oklch(83.6% 0.0309 168.09)",
+          "oklch(95% 0.0309 168.09)"
+        ]
+      },
+      "muted": {
+        "role": "neutral",
+        "displayName": "Texto secundário",
+        "tonalRamp": [
+          "oklch(15% 0.0394 143.62)",
+          "oklch(26.4% 0.0394 143.62)",
+          "oklch(37.9% 0.0394 143.62)",
+          "oklch(49.3% 0.0394 143.62)",
+          "oklch(60.7% 0.0394 143.62)",
+          "oklch(72.1% 0.0394 143.62)",
+          "oklch(83.6% 0.0394 143.62)",
+          "oklch(95% 0.0394 143.62)"
+        ]
+      },
+      "accent": {
+        "role": "secondary",
+        "displayName": "Verde de atividade",
+        "tonalRamp": [
+          "oklch(15% 0.0878 155.22)",
+          "oklch(26.4% 0.0878 155.22)",
+          "oklch(37.9% 0.0878 155.22)",
+          "oklch(49.3% 0.0878 155.22)",
+          "oklch(60.7% 0.0878 155.22)",
+          "oklch(72.1% 0.0878 155.22)",
+          "oklch(83.6% 0.0878 155.22)",
+          "oklch(95% 0.0878 155.22)"
+        ]
+      },
+      "warn": {
+        "role": "tertiary",
+        "displayName": "Âmbar de atenção",
+        "tonalRamp": [
+          "oklch(15% 0.0925 65.94)",
+          "oklch(26.4% 0.0925 65.94)",
+          "oklch(37.9% 0.0925 65.94)",
+          "oklch(49.3% 0.0925 65.94)",
+          "oklch(60.7% 0.0925 65.94)",
+          "oklch(72.1% 0.0925 65.94)",
+          "oklch(83.6% 0.0925 65.94)",
+          "oklch(95% 0.0925 65.94)"
+        ]
+      },
+      "casing": {
+        "role": "primary",
+        "displayName": "Carcaça vermelha",
+        "tonalRamp": [
+          "oklch(15% 0.1906 21.20)",
+          "oklch(26.4% 0.1906 21.20)",
+          "oklch(37.9% 0.1906 21.20)",
+          "oklch(49.3% 0.1906 21.20)",
+          "oklch(60.7% 0.1906 21.20)",
+          "oklch(72.1% 0.1906 21.20)",
+          "oklch(83.6% 0.1906 21.20)",
+          "oklch(95% 0.1906 21.20)"
+        ]
+      },
+      "casing-dark": {
+        "role": "primary",
+        "displayName": "Borda da carcaça",
+        "tonalRamp": [
+          "oklch(15% 0.1541 19.45)",
+          "oklch(26.4% 0.1541 19.45)",
+          "oklch(37.9% 0.1541 19.45)",
+          "oklch(49.3% 0.1541 19.45)",
+          "oklch(60.7% 0.1541 19.45)",
+          "oklch(72.1% 0.1541 19.45)",
+          "oklch(83.6% 0.1541 19.45)",
+          "oklch(95% 0.1541 19.45)"
+        ]
+      },
+      "focus": {
+        "role": "secondary",
+        "displayName": "Foco ciano escuro",
+        "tonalRamp": [
+          "oklch(15% 0.0907 209.93)",
+          "oklch(26.4% 0.0907 209.93)",
+          "oklch(37.9% 0.0907 209.93)",
+          "oklch(49.3% 0.0907 209.93)",
+          "oklch(60.7% 0.0907 209.93)",
+          "oklch(72.1% 0.0907 209.93)",
+          "oklch(83.6% 0.0907 209.93)",
+          "oklch(95% 0.0907 209.93)"
+        ]
+      },
+      "screen-border": {
+        "role": "neutral",
+        "displayName": "Moldura da tela",
+        "tonalRamp": [
+          "oklch(15% 0.0314 148.33)",
+          "oklch(26.4% 0.0314 148.33)",
+          "oklch(37.9% 0.0314 148.33)",
+          "oklch(49.3% 0.0314 148.33)",
+          "oklch(60.7% 0.0314 148.33)",
+          "oklch(72.1% 0.0314 148.33)",
+          "oklch(83.6% 0.0314 148.33)",
+          "oklch(95% 0.0314 148.33)"
+        ]
+      },
+      "control-bg": {
+        "role": "neutral",
+        "displayName": "Campo claro",
+        "tonalRamp": [
+          "oklch(15% 0.0172 110.28)",
+          "oklch(26.4% 0.0172 110.28)",
+          "oklch(37.9% 0.0172 110.28)",
+          "oklch(49.3% 0.0172 110.28)",
+          "oklch(60.7% 0.0172 110.28)",
+          "oklch(72.1% 0.0172 110.28)",
+          "oklch(83.6% 0.0172 110.28)",
+          "oklch(95% 0.0172 110.28)"
+        ]
+      },
+      "primary-button": {
+        "role": "primary",
+        "displayName": "Tecla principal",
+        "tonalRamp": [
+          "oklch(15% 0.1817 19.87)",
+          "oklch(26.4% 0.1817 19.87)",
+          "oklch(37.9% 0.1817 19.87)",
+          "oklch(49.3% 0.1817 19.87)",
+          "oklch(60.7% 0.1817 19.87)",
+          "oklch(72.1% 0.1817 19.87)",
+          "oklch(83.6% 0.1817 19.87)",
+          "oklch(95% 0.1817 19.87)"
+        ]
+      },
+      "primary-button-hover": {
+        "role": "primary",
+        "displayName": "Tecla principal ao apontar",
+        "tonalRamp": [
+          "oklch(15% 0.1652 19.37)",
+          "oklch(26.4% 0.1652 19.37)",
+          "oklch(37.9% 0.1652 19.37)",
+          "oklch(49.3% 0.1652 19.37)",
+          "oklch(60.7% 0.1652 19.37)",
+          "oklch(72.1% 0.1652 19.37)",
+          "oklch(83.6% 0.1652 19.37)",
+          "oklch(95% 0.1652 19.37)"
+        ]
+      },
+      "on-casing": {
+        "role": "neutral",
+        "displayName": "Tinta clara da carcaça",
+        "tonalRamp": [
+          "oklch(15% 0.0159 82.79)",
+          "oklch(26.4% 0.0159 82.79)",
+          "oklch(37.9% 0.0159 82.79)",
+          "oklch(49.3% 0.0159 82.79)",
+          "oklch(60.7% 0.0159 82.79)",
+          "oklch(72.1% 0.0159 82.79)",
+          "oklch(83.6% 0.0159 82.79)",
+          "oklch(95% 0.0159 82.79)"
+        ]
+      },
+      "lens-cyan": {
+        "role": "secondary",
+        "displayName": "Lente ciano",
+        "tonalRamp": [
+          "oklch(15% 0.1352 202.03)",
+          "oklch(26.4% 0.1352 202.03)",
+          "oklch(37.9% 0.1352 202.03)",
+          "oklch(49.3% 0.1352 202.03)",
+          "oklch(60.7% 0.1352 202.03)",
+          "oklch(72.1% 0.1352 202.03)",
+          "oklch(83.6% 0.1352 202.03)",
+          "oklch(95% 0.1352 202.03)"
+        ]
+      },
+      "profile-bg": {
+        "role": "neutral",
+        "displayName": "Cartão LCD",
+        "tonalRamp": [
+          "oklch(15% 0.0260 121.19)",
+          "oklch(26.4% 0.0260 121.19)",
+          "oklch(37.9% 0.0260 121.19)",
+          "oklch(49.3% 0.0260 121.19)",
+          "oklch(60.7% 0.0260 121.19)",
+          "oklch(72.1% 0.0260 121.19)",
+          "oklch(83.6% 0.0260 121.19)",
+          "oklch(95% 0.0260 121.19)"
+        ]
+      },
+      "profile-header": {
+        "role": "neutral",
+        "displayName": "Cabeçalho LCD",
+        "tonalRamp": [
+          "oklch(15% 0.0403 124.14)",
+          "oklch(26.4% 0.0403 124.14)",
+          "oklch(37.9% 0.0403 124.14)",
+          "oklch(49.3% 0.0403 124.14)",
+          "oklch(60.7% 0.0403 124.14)",
+          "oklch(72.1% 0.0403 124.14)",
+          "oklch(83.6% 0.0403 124.14)",
+          "oklch(95% 0.0403 124.14)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "headline": {
+        "displayName": "Título de página",
+        "purpose": "Hierarquia principal; reduz para 29px até 500px."
+      },
+      "title": {
+        "displayName": "Título de seção",
+        "purpose": "Separação entre instrumentos e grupos de dados."
+      },
+      "body": {
+        "displayName": "Texto de interface",
+        "purpose": "Leitura e instruções do painel."
+      },
+      "control": {
+        "displayName": "Controle",
+        "purpose": "Busca, seletores e botões gerais."
+      },
+      "label": {
+        "displayName": "Rótulo",
+        "purpose": "Filtros e nomes de métricas."
+      },
+      "micro": {
+        "displayName": "Microtexto",
+        "purpose": "Contexto compacto, chips e estados; mínimo de 11px no tema."
+      },
+      "metric": {
+        "displayName": "Valor do resumo",
+        "purpose": "Números de comparação, sempre tabulares."
+      },
+      "mono": {
+        "displayName": "Identificador",
+        "purpose": "Números de exemplar e registros compactos."
+      }
+    },
+    "shadows": [
+      {
+        "name": "casing-inset",
+        "value": "inset 0 2px 3px #ffb3b4",
+        "purpose": "Brilho da carcaça."
+      },
+      {
+        "name": "screen-frame",
+        "value": "inset 0 2px 5px #25362922, 0 0 0 5px #a92335",
+        "purpose": "Tela encaixada na carcaça."
+      },
+      {
+        "name": "scanner-lens",
+        "value": "inset 0 0 0 3px #126879, 0 3px 5px #6f1d2d80",
+        "purpose": "Aro e profundidade da lente."
+      },
+      {
+        "name": "button-secondary",
+        "value": "inset 0 -2px 0 #bcc9ae",
+        "purpose": "Relevo inferior da tecla clara."
+      },
+      {
+        "name": "button-primary",
+        "value": "inset 0 2px 2px #ed7d8877, inset 0 -2px 0 #8c2030",
+        "purpose": "Relevo da tecla vermelha."
+      },
+      {
+        "name": "button-pressed",
+        "value": "inset 0 1px 2px #64765c44",
+        "purpose": "Pressão do controle."
+      },
+      {
+        "name": "lcd-highlight",
+        "value": "inset 0 2px 0 #faffee",
+        "purpose": "Borda iluminada dos instrumentos de resumo."
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-transition",
+        "value": "background-color 120ms ease-out, transform 120ms ease-out",
+        "purpose": "Resposta curta dos botões; removida com prefers-reduced-motion."
+      },
+      {
+        "name": "collection-transition",
+        "value": "border-color 120ms ease-out, background-color 120ms ease-out",
+        "purpose": "Hover de cartão sem deslocamento; removido com prefers-reduced-motion."
+      },
+      {
+        "name": "button-press",
+        "value": "translateY(1px)",
+        "purpose": "Deslocamento enquanto um botão habilitado está pressionado."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "four-operation-profiles-min",
+        "value": "1380px"
+      },
+      {
+        "name": "header-wrap-and-single-specimen-max",
+        "value": "1180px"
+      },
+      {
+        "name": "base-profile-grid-two-columns-max",
+        "value": "950px"
+      },
+      {
+        "name": "base-specimen-grid-single-column-max",
+        "value": "830px"
+      },
+      {
+        "name": "mobile-operation-and-filters-max",
+        "value": "760px"
+      },
+      {
+        "name": "summary-two-columns-max",
+        "value": "620px"
+      },
+      {
+        "name": "compact-device-header-max",
+        "value": "500px"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Botão principal",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "Ação principal vermelha com relevo interno e resposta curta ao pressionar.",
+      "html": "<button class=\"ds-button-primary\" type=\"button\">Abrir perfis</button>",
+      "css": ".ds-button-primary{min-height:40px;padding:8px 12px;border:1px solid #73846c;border-radius:7px;font-family:\"Segoe UI\",system-ui,sans-serif;font-size:13px;line-height:1.5;cursor:pointer;transition:background-color 120ms ease-out,transform 120ms ease-out;background:var(--primary-button,#bb283b);color:#fff9ee;border-color:#821b2a;box-shadow:inset 0 2px 2px #ed7d8877,inset 0 -2px 0 #8c2030;font-weight:750}.ds-button-primary:hover:not(:disabled){background:#a21f32;color:white}.ds-button-primary:active:not(:disabled){transform:translateY(1px);box-shadow:inset 0 1px 2px #64765c44}.ds-button-primary:disabled{opacity:.52;box-shadow:none;cursor:default}.ds-button-primary:focus-visible{outline:3px solid var(--focus,#007887);outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-button-primary{transition:none;animation:none}}"
+    },
+    {
+      "name": "Botão secundário",
+      "kind": "button",
+      "refersTo": "button-secondary",
+      "description": "Controles cotidianos claros, usados ao lado de dados e filtros.",
+      "html": "<button class=\"ds-button-secondary\" type=\"button\">Atualizar</button>",
+      "css": ".ds-button-secondary{min-height:40px;padding:8px 12px;border:1px solid #73846c;border-radius:7px;font-family:\"Segoe UI\",system-ui,sans-serif;font-size:13px;line-height:1.5;cursor:pointer;transition:background-color 120ms ease-out,transform 120ms ease-out;background:var(--control-bg,#f5f6e9);color:var(--text,#1b3028);box-shadow:inset 0 -2px 0 #bcc9ae}.ds-button-secondary:hover:not(:disabled){background:#d9ead0;border-color:#4b6950}.ds-button-secondary:active:not(:disabled){transform:translateY(1px);box-shadow:inset 0 1px 2px #64765c44}.ds-button-secondary:disabled{opacity:.52;box-shadow:none;cursor:default}.ds-button-secondary:focus-visible{outline:3px solid var(--focus,#007887);outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-button-secondary{transition:none;animation:none}}"
+    },
+    {
+      "name": "Controle de som",
+      "kind": "button",
+      "refersTo": "button-sound",
+      "description": "Alterna Som ligado/Sem som com aria-pressed. O aplicativo persiste idlebot.sound.enabled; bipes Web Audio de 95ms, onda quadrada e ganho máximo 0,035. Esta prévia é visual e não reproduz áudio.",
+      "html": "<button class=\"ds-sound\" type=\"button\" aria-label=\"Sons de 8 bits\" aria-pressed=\"true\"><span class=\"ds-sound-icon\" aria-hidden=\"true\"></span><span>Som ligado</span></button>",
+      "css": ".ds-sound{min-height:40px;padding:8px 12px;border:1px solid #73846c;border-radius:7px;font-family:\"Segoe UI\",system-ui,sans-serif;font-size:13px;line-height:1.5;cursor:pointer;transition:background-color 120ms ease-out,transform 120ms ease-out;display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:38px;padding:7px 10px;background:#ab2434;color:#fff8eb;border-color:#7a1c29;box-shadow:inset 0 1px 2px #ef8f9366;font-size:12px}.ds-sound:hover:not(:disabled){background:#8c1b2b;border-color:#721925}.ds-sound-icon{width:17px;height:17px;display:inline-block;background:linear-gradient(currentColor,currentColor) 0 6px/3px 5px no-repeat,linear-gradient(currentColor,currentColor) 5px 3px/3px 11px no-repeat,linear-gradient(currentColor,currentColor) 10px 0/3px 17px no-repeat,linear-gradient(currentColor,currentColor) 15px 5px/2px 7px no-repeat}.ds-sound[aria-pressed=\"false\"] .ds-sound-icon{background-size:3px 2px,3px 2px,3px 2px,2px 2px;background-position-y:8px}.ds-sound:active:not(:disabled){transform:translateY(1px);box-shadow:inset 0 1px 2px #64765c44}.ds-sound:disabled{opacity:.52;box-shadow:none;cursor:default}.ds-sound:focus-visible{outline:3px solid var(--focus,#007887);outline-offset:3px}@media(prefers-reduced-motion:reduce){.ds-sound{transition:none;animation:none}}"
+    },
+    {
+      "name": "Campo de busca",
+      "kind": "input",
+      "refersTo": "input-search",
+      "description": "Campo claro com rótulo permanente; ocupa uma linha inteira da barra de filtros no celular.",
+      "html": "<label class=\"ds-search-label\">Buscar Pokémon<input class=\"ds-search\" type=\"search\" placeholder=\"Nome, apelido ou ID\"></label>",
+      "css": ".ds-search-label{display:grid;gap:4px;min-width:0;color:var(--muted,#4d604c);font-family:\"Segoe UI\",system-ui,sans-serif;font-size:12px;font-weight:600}.ds-search{min-height:40px;max-width:100%;min-width:0;padding:8px 12px;border:1px solid #73846c;border-radius:7px;background:var(--control-bg,#f5f6e9);color:var(--text,#1b3028);caret-color:var(--casing-dark,#941c2d);font-family:\"Segoe UI\",system-ui,sans-serif;font-size:13px;line-height:1.5}.ds-search:focus-visible{outline:3px solid var(--focus,#007887);outline-offset:3px}"
+    },
+    {
+      "name": "Teclas de navegação",
+      "kind": "nav",
+      "refersTo": "navigation-key",
+      "description": "Navegação sobre a carcaça; aria-current troca a tecla ativa para a cor marfim da tela.",
+      "html": "<nav class=\"ds-navigation\" aria-label=\"Seções do IdleBot\"><a href=\"#caca\" aria-current=\"page\">Caça</a><a href=\"#colecao\">Meus Pokémon</a><a href=\"#mercado\">Mercado</a></nav>",
+      "css": ".ds-navigation{display:flex;justify-content:center;gap:8px;padding:12px;background:var(--casing,#cf3442);font-family:\"Segoe UI\",system-ui,sans-serif;}.ds-navigation a{display:flex;align-items:center;justify-content:center;min-height:48px;padding:10px 23px;border:1px solid #761c2a;border-radius:8px;background:#b82437;color:#fff9ee;box-shadow:inset 0 2px 2px #ee8c9377,0 2px 3px #771a2955;font-size:15px;font-weight:700;white-space:nowrap;text-decoration:none}.ds-navigation a:hover{background:#9e2131}.ds-navigation a[aria-current]{background:var(--bg,#f2f2e3);color:var(--text,#1b3028);border-color:var(--screen-border,#354537);box-shadow:inset 0 -3px 0 #b9cab0,0 2px 3px #771a2944}.ds-navigation a:focus-visible{outline:3px solid var(--focus,#007887);outline-offset:3px}@media(max-width:500px){.ds-navigation{gap:5px}.ds-navigation a{min-height:42px;padding:8px 5px;font-size:12px;border-radius:6px}}"
+    },
+    {
+      "name": "Estado do perfil",
+      "kind": "chip",
+      "refersTo": "status-ready",
+      "description": "Estado com texto, cor e ponto; pronto/caçando em verde, login em âmbar e reconexão em azul.",
+      "html": "<div class=\"ds-status-row\"><span class=\"ds-status ds-ready\">Caçando</span><span class=\"ds-status ds-login\">Login</span><span class=\"ds-status ds-reconnecting\">Reconectando</span></div>",
+      "css": ".ds-status-row{display:flex;flex-wrap:wrap;gap:8px}.ds-status{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #a9b69b;border-radius:5px;color:#45563d;background:#edf0df;white-space:normal;font-family:\"Segoe UI\",system-ui,sans-serif;font-size:11px;line-height:1.35}.ds-status:before{content:\"\";width:6px;height:6px;border-radius:50%;background:currentColor;flex:none}.ds-ready{background:#d4edbb;color:#28601b;border-color:#91b878}.ds-login{background:#ffe1a1;color:var(--warn,#75470c);border-color:#c29447}.ds-reconnecting{background:#d5eced;color:#235e6c;border-color:#9ebfc0}"
+    },
+    {
+      "name": "Chip de tipo",
+      "kind": "chip",
+      "refersTo": "type-chip",
+      "description": "Categoria do Pokémon com nome explícito e borda na cor do texto.",
+      "html": "<div class=\"ds-types\"><span class=\"ds-type ds-type-grass\">Planta</span><span class=\"ds-type ds-type-fire\">Fogo</span><span class=\"ds-type ds-type-water\">Água</span><span class=\"ds-type ds-type-electric\">Elétrico</span><span class=\"ds-type ds-type-ghost\">Fantasma</span></div>",
+      "css": ".ds-types{display:flex;flex-wrap:wrap;gap:5px}.ds-type{display:inline-block;width:fit-content;padding:2px 9px;border:1px solid currentColor;border-radius:5px;font-family:\"Segoe UI\",system-ui,sans-serif;font-size:11px;font-weight:700;background:#e0e4d6;color:#42503b}.ds-type-grass{background:#c7e6a7;color:#315218}.ds-type-fire{background:#ffd2a1;color:#80380b}.ds-type-water{background:#c6e7f4;color:#205567}.ds-type-electric{background:#ffe587;color:#655100}.ds-type-ghost{background:#ded3ef;color:#594075}"
+    },
+    {
+      "name": "Cartão de perfil",
+      "kind": "card",
+      "refersTo": "profile-card",
+      "description": "Instrumento operacional com cabeçalho tonal e áreas separadas para identidade, estado e atividade. Valores de prévia são marcadores.",
+      "html": "<article class=\"ds-profile\"><header class=\"ds-profile-top\"><h3>Perfil 01</h3><span class=\"ds-profile-status\">Pronto</span></header><div class=\"ds-profile-info\"><strong>Progressão</strong><p>Aguardando atividade</p><div class=\"ds-profile-stats\"><span>XP/h —</span><span>Tempo de caça —</span></div></div></article>",
+      "css": ".ds-profile{border:1px solid #8c9e7d;background:var(--profile-bg,#e8eedb);border-radius:var(--radius,12px);overflow:hidden;color:var(--text,#1b3028);font-family:\"Segoe UI\",system-ui,sans-serif;}.ds-profile-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:13px 14px;background:var(--profile-header,#dce7ca);border-bottom:1px solid #b1bea1}.ds-profile-top h3{margin:0;font-size:16px}.ds-profile-status{display:inline-flex;align-items:center;gap:6px;padding:5px 8px;border:1px solid #91b878;border-radius:5px;background:#d4edbb;color:#28601b;font-size:11px;line-height:1.35}.ds-profile-status:before{content:\"\";width:6px;height:6px;border-radius:50%;background:currentColor}.ds-profile-info{display:grid;gap:10px;padding:12px 14px 14px;font-size:13px}.ds-profile-info p{margin:0;color:var(--muted,#4d604c)}.ds-profile-stats{display:flex;flex-wrap:wrap;gap:4px 12px;padding:8px 0;border-top:1px solid #b9c6a8;border-bottom:1px solid #b9c6a8;color:var(--muted,#4d604c);font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "Cartão de coleção",
+      "kind": "card",
+      "refersTo": "collection-card",
+      "description": "Quadro de retrato LCD, identidade e métricas. A prévia preserva a moldura e deixa a arte vazia; não incorpora uma imagem externa nem dados fictícios de conta.",
+      "html": "<a class=\"ds-collection\" href=\"#exemplar\"><div class=\"ds-portrait\" aria-hidden=\"true\"><span class=\"ds-number\">#—</span></div><strong>Pokémon</strong><small>Perfil · Equipe</small><dl class=\"ds-metrics\"><div><dt>Nível</dt><dd>—</dd></div><div><dt>Potência</dt><dd>—</dd></div><div><dt>Nota</dt><dd>—</dd></div><div><dt>IV total</dt><dd>—</dd></div></dl></a>",
+      "css": ".ds-collection{display:grid;gap:12px;max-width:260px;padding:10px;border:1px solid #99ac89;border-radius:11px;background:var(--profile-bg,#e8eedb);color:var(--text,#1b3028);font-family:\"Segoe UI\",system-ui,sans-serif;text-decoration:none;transition:border-color 120ms ease-out,background-color 120ms ease-out}.ds-collection:hover{border-color:#ab2b39;background:#f1f3e5}.ds-collection[aria-current]{outline:2px solid #c23142;outline-offset:-2px;background:#f1f3e5}.ds-collection:focus-visible{outline:3px solid var(--focus,#007887);outline-offset:3px}.ds-portrait{position:relative;display:grid;place-items:center;height:160px;border:1px solid #99b17f;border-radius:7px;background:linear-gradient(145deg,#d9e9ba,#b7d099)}.ds-portrait:before{content:\"\";width:85%;height:75%;border:1px solid #7b9b6244}.ds-portrait:after{content:\"\";position:absolute;inset:10px;background:linear-gradient(#edf6d8,#edf6d8) left top/17px 3px no-repeat,linear-gradient(#edf6d8,#edf6d8) left top/3px 17px no-repeat,linear-gradient(#edf6d8,#edf6d8) right bottom/17px 3px no-repeat,linear-gradient(#edf6d8,#edf6d8) right bottom/3px 17px no-repeat}.ds-number{position:absolute;bottom:4px;left:6px;background:#e6f0d6cc;padding:2px 5px;border-radius:3px;color:#38502e;font:11px Consolas,\"Courier New\",monospace}.ds-collection>strong{font-size:19px;letter-spacing:-.02em}.ds-collection>small{color:var(--muted,#4d604c);font-size:11px}.ds-metrics{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;margin:0;padding-top:10px;border-top:1px solid var(--line,#9ba98d)}.ds-metrics dt{font-size:11px;color:var(--muted,#4d604c)}.ds-metrics dd{margin:0;font-size:18px;font-weight:700;font-variant-numeric:tabular-nums}@media(prefers-reduced-motion:reduce){.ds-collection{transition:none;animation:none}}"
+    },
+    {
+      "name": "Lente do scanner",
+      "kind": "custom",
+      "refersTo": "scanner-lens",
+      "description": "Assinatura decorativa em CSS: aro, gradiente radial e reflexos. Não é um botão e não comunica conexão.",
+      "html": "<div class=\"ds-lens-mount\"><span class=\"ds-lens\" aria-hidden=\"true\"></span></div>",
+      "css": ".ds-lens-mount{padding:12px;background:var(--casing,#cf3442)}.ds-lens{position:relative;display:block;width:70px;height:70px;border:6px solid #d6e1dc;outline:2px solid #3a3635;border-radius:50%;background:radial-gradient(circle at 35% 29%,#82ffff 0,#18dae6 30%,#079bb9 66%,#086c90 100%);box-shadow:inset 0 0 0 3px #126879,0 3px 5px #6f1d2d80}.ds-lens:before{content:\"\";position:absolute;width:24px;height:13px;left:9px;top:9px;border-radius:60%;transform:rotate(-35deg);background:#e0ffff}.ds-lens:after{content:\"\";position:absolute;width:7px;height:7px;left:7px;top:27px;border-radius:50%;background:#c3ffff}@media(max-width:500px){.ds-lens{width:56px;height:56px;border-width:5px}.ds-lens:before{width:18px;height:10px;left:7px;top:7px}.ds-lens:after{left:5px;top:21px;width:5px;height:5px}}"
+    }
+  ],
+  "narrative": {
+    "northStar": "Pokédex operacional",
+    "overview": "A interface assume a forma de uma Pokédex clássica: carcaça vermelha, lente ciano com reflexo, pequenos indicadores e uma tela clara com instrumentos verdes. A identidade vem desses materiais construídos em CSS, enquanto texto, dados e controles continuam sendo elementos reais da aplicação.\n\nA densidade é de um painel de operação: hierarquia curta, números fáceis de comparar e cartões que agrupam identidade, estado e atividade. A mesma linguagem aparece na caça, na coleção, na ficha, no mercado e no monitor do celular. O efeito tátil é discreto; o conteúdo permanece estável durante atualizações automáticas.",
+    "keyCharacteristics": [
+      "Carcaça vermelha contínua e tela marfim delimitada por uma borda verde escura.",
+      "Lente ciano, indicadores circulares e controles com relevo interno.",
+      "Superfícies LCD verdes, texto escuro e números tabulares.",
+      "Segoe UI para interface, com Consolas reservado a identificadores e registros.",
+      "Bipes curtos em interações reais, com silêncio persistido localmente."
+    ],
+    "rules": [
+      {
+        "name": "The Casing and Screen Rule",
+        "body": "Reserve o vermelho para a carcaça e as teclas de ação; mantenha a leitura dos dados sobre marfim e verdes claros. Os estados exigem texto próprio, além da cor.",
+        "section": "colors"
+      },
+      {
+        "name": "The Readable Data Rule",
+        "body": "Preserve o mínimo de 11px usado pelo tema para microtexto e mantenha números tabulares em métricas e tabelas. Não transforme o estilo de uma etiqueta pequena em estilo de texto corrido.",
+        "section": "typography"
+      },
+      {
+        "name": "The Mechanical Depth Rule",
+        "body": "Use sombras internas e contornos para sugerir a montagem do aparelho. Cartões de dados permanecem apoiados na tela, sem elevação animada.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do construir a identidade com carcaça, lente, contornos e painéis reais em CSS.",
+      "Do manter foco visível ciano, nomes acessíveis e a indicação textual dos estados.",
+      "Do usar algarismos tabulares em comparações, métricas e tabelas.",
+      "Do reservar uma linha completa para a busca no celular e manter os filtros com rótulos.",
+      "Do preservar a leitura em uma coluna dos perfis no celular e duas colunas na coleção.",
+      "Do respeitar movimento reduzido e permitir silenciar os sons de interface."
+    ],
+    "donts": [
+      "Don't colocar uma imagem de mockup por cima dos controles operacionais.",
+      "Don't usar vermelho de carcaça como único indicador de erro ou urgência.",
+      "Don't reduzir o microtexto do tema abaixo de 11px para acomodar mais conteúdo.",
+      "Don't emitir sons em atualizações automáticas, controles desabilitados ou páginas ocultas.",
+      "Don't transformar o monitor do celular em uma superfície de comandos.",
+      "Don't apresentar dados demonstrativos ou imagens geradas como capturas reais do jogo."
+    ]
+  }
+}

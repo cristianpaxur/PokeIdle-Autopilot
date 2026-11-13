@@ -6,8 +6,11 @@ import test from 'node:test';
 import { WebSocket } from 'ws';
 import { RemoteDesktop } from '../src/remote-desktop.mjs';
 import { Session } from '../src/session.mjs';
+import { Ledger } from '../src/ledger.mjs';
 
-test('one controller can connect after the bot drains and returning control revokes the connection', async () => {
+test('one controller can connect after the bot drains and returning control revokes the connection', async (t) => {
+  const ledger = new Ledger(':memory:');
+  t.after(() => ledger.close());
   const vnc = createTcpServer((socket) => socket.write('RFB 003.008\n'));
   vnc.listen(0, '127.0.0.1');
   await once(vnc, 'listening');
@@ -19,7 +22,7 @@ test('one controller can connect after the bot drains and returning control revo
   const url = `ws://127.0.0.1:${server.address().port}/api/profiles/1/screen`;
   let finishPause;
   const pausing = new Promise((resolve) => { finishPause = resolve; });
-  const session = new Session({ id: 1 }, {}, { profileAccount: () => null, mode: () => undefined }, () => {});
+  const session = new Session({ id: 1 }, {}, ledger, () => {});
   session.desired = true;
   session.online = true;
   session.browser = { socket: {} };

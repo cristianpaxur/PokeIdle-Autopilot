@@ -8,6 +8,7 @@
 <p align="center">
   <a href="#instalação">Instalar</a> ·
   <a href="#modos-de-caça">Modos de caça</a> ·
+  <a href="#planejador-por-perfil">Planejador</a> ·
   <a href="#monitor-no-celular">Monitor no celular</a> ·
   <a href="docs/pokeidle.md">Guia do jogo</a>
 </p>
@@ -56,9 +57,24 @@ Escolha o **Modo de caça** em cada perfil. O painel salva a escolha entre sess�
 | **Progressão e Outland** | Compara rotas liberadas pelo XP líquido do treinador por hora, treina um Pokémon principal e passa para a Outland quando o treinador chega ao nível 150. Na Outland, coleta tokens e fragmentos para venda. |
 | **Shiny** | Caça em rotas comuns com espécies que têm forma shiny, repõe Poké Bolas e registra as capturas confirmadas pelo jogo. Pode anunciar os shinies que o bot capturou. |
 
-O bot usa a mediana de pelo menos três vendas comparáveis para cotar os anúncios em Gemas. **Gemas líquidas/h** divide o valor das vendas confirmadas após a comissão pelo tempo medido de caça. As métricas de caça começam a acumular dados com esta versão. [Regras de venda e cálculo das métricas](docs/pokeidle.md#como-o-rendimento-é-medido)
+O bot usa a mediana de pelo menos três vendas comparáveis para cotar os anúncios em Gemas. **Gemas líquidas/h** divide o valor das vendas confirmadas após a comissão pelo tempo medido de caça. [Regras de venda e cálculo das métricas](docs/pokeidle.md#como-o-rendimento-é-medido)
+
+## Planejador por perfil
+
+Na aba **Caça**, abra **Planejador** no cartão do perfil. Ajuste as opções e clique em **Salvar preferências**. Os ajustes ficam no banco local e são mantidos ao atualizar o Docker.
+
+| Seção | O que você pode ajustar |
+| --- | --- |
+| **Suprimentos** | Compra e uso de poções e revives, reserva de ouro, limite de gasto por hora, estoque desejado e limiar de HP para cura. |
+| **Progressão** | Evolução automática, tempo de busca de pedras e prioridade de XP durante eventos temporários. |
+| **Ginásios** | Disputas automáticas a partir do nível 150 para melhorar o bônus de dano do Pokémon principal. Ajuste a margem de força e o limite de tentativas em 24 h. |
+| **Bosses** | Batalhas a partir do nível 300, conforme os requisitos de cada boss. Ajuste o nível mínimo por integrante, a reserva de fichas, o limite de tentativas e a duração máxima. |
+
+Ginásios e bosses vêm ativados no modo **Progressão e Outland**. Por padrão, cada atividade tem até duas tentativas em 24 h, e o bot mantém uma ficha de boss em reserva. O modo **Shiny** mantém o foco na caça. O Planejador mostra a decisão atual, o motivo e o histórico de tentativas. [Regras de progressão](docs/pokeidle.md#planejador-por-conta) · [Critérios para ginásios e bosses](docs/pokeidle.md#ginásios-e-bosses)
 
 ## Painel
+
+O painel e o monitor usam o tema Pokédex. O botão de som no cabeçalho ativa ou silencia os cliques de 8 bits e salva a preferência no navegador.
 
 - **Caça** mostra a rota, o estado e a tela de cada perfil. Alterne entre **24 h** e **7 dias** para acompanhar tempo de caça, drops, encontros e vendas. Na progressão, abra **XP das hunts** para comparar rotas. Consulte **Atenção** quando um perfil precisar de ação ou estiver tentando se recuperar. No Docker, **Ver 4 telas** abre o mosaico.
 - **Meus Pokémon** reúne os Pokémon da equipe, do Depot e da Coleção por perfil. Busque por nome, apelido ou ID e abra a ficha de um exemplar para ver seus atributos.
@@ -66,7 +82,7 @@ O bot usa a mediana de pelo menos três vendas comparáveis para cotar os anúnc
 
 ## Monitor no celular
 
-Escaneie o QR que o instalador abre no PC. Pelo navegador do celular, acompanhe as métricas de cada perfil, os avisos e as transmissões disponíveis em modo somente leitura. O monitor funciona pelo Wi-Fi, 4G ou 5G enquanto o PC e o Docker estiverem ativos.
+Escaneie o QR que o instalador abre no PC. Pelo navegador do celular, acompanhe as métricas de cada perfil, os avisos, a decisão do Planejador e as transmissões disponíveis. O monitor é somente leitura e funciona pelo Wi-Fi, 4G ou 5G enquanto o PC e o Docker estiverem ativos.
 
 Clique em **QR do celular** no painel do PC para exibir o código novamente. Se o endereço temporário mudar, escaneie o código atualizado. Guarde o QR para uso próprio, pois ele dá acesso ao monitor.
 
@@ -105,7 +121,7 @@ Crie `idlebot.local.json` na raiz do projeto. O array `profiles` corresponde aos
 
 - Use `mode: "farm"` para progressão e Outland ou `mode: "shiny"` para captura. O padrão é `farm`. A escolha salva no painel tem prioridade.
 - Informe em `hunt` o slug de uma rota preferida. Ela precisa estar liberada e servir à fase atual.
-- `goldReserve` protege uma reserva de ouro. `maxListingFee` limita o custo de estadia de cada anúncio.
+- `goldReserve` define a reserva para anúncios e o valor inicial da reserva de suprimentos no Planejador. `maxListingFee` limita o custo de estadia de cada anúncio.
 - Com `marketEnabled: false`, o perfil deixa de criar anúncios. Para ativar saques, use `withdrawal.enabled` e informe o endereço público de uma carteira Solana.
 - `minListingGems` define o preço bruto mínimo, em Gemas, por unidade. O mínimo do próprio jogo continua valendo.
 - `repriceAfterHours` define a idade mínima para revisar um anúncio do bot. O valor `0` desativa a retirada de anúncios ativos. Com a revisão ativa, o bot só solicita a retirada se a cotação cair pelo menos 10%, respeitar o preço mínimo e couber na reserva de ouro. A republicação aguarda a devolução confirmada pelo jogo.

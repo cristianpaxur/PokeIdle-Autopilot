@@ -28,6 +28,11 @@ export function pokemonAtlas() {
           species[row.pokeId] = {
             name: row.name, looktype: row.looktype, types: [row.type1, row.type2].filter(Boolean), rarity: row.rarity,
             evolvesTo: row.evolvesToId, evolveLevel: row.evolveLevel,
+            combat: {
+              pokeId: row.pokeId, baseHp: row.baseHp, baseAtk: row.baseAtk, baseDef: row.baseDef,
+              baseSpAtk: row.baseSpAtk, baseSpDef: row.baseSpDef, baseSpeed: row.baseSpeed,
+              type1: row.type1, type2: row.type2, attacks: row.attacks,
+            },
           };
         }
       }

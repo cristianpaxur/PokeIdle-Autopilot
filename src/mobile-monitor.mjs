@@ -9,6 +9,8 @@ const files = new Map([
   ['/profile-summary.js', ['profile-summary.js', 'text/javascript; charset=utf-8']],
   ['/remote.js', ['remote.js', 'text/javascript; charset=utf-8']],
   ['/style.css', ['style.css', 'text/css; charset=utf-8']],
+  ['/pokedex.css', ['pokedex.css', 'text/css; charset=utf-8']],
+  ['/pokedex.js', ['pokedex.js', 'text/javascript; charset=utf-8']],
 ]);
 const digest = (value) => createHash('sha256').update(value).digest();
 const secret = () => randomBytes(32).toString('base64url');
@@ -40,6 +42,9 @@ export function createMobileMonitor({ snapshot, desktop }) {
         id: profile.id, status: profile.status, hunt: profile.hunt, mode: profile.mode, phase: profile.phase,
         level: profile.level, active: profile.active, lastProgressAt: profile.lastProgressAt,
         attention: profile.attention && { kind: profile.attention.kind, text: profile.attention.text },
+        plannerDecision: profile.planner?.decision && {
+          code: profile.planner.decision.code, title: profile.planner.decision.title, reason: profile.planner.decision.reason,
+        },
         periods: profile.periods, huntOptimizer: profile.huntOptimizer && {
           trial: Boolean(profile.huntOptimizer.trial),
           ranking: profile.huntOptimizer.ranking.filter(({ slug }) => slug === profile.hunt)

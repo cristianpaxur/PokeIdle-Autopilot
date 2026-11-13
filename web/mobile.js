@@ -42,6 +42,15 @@ function render() {
     const route = [phaseLabels[profile.phase], profile.hunt?.replaceAll('-', ' ')].filter(Boolean);
     entry.card.querySelector('.profile-route strong').textContent = route.join(' · ') || 'Sem rota ativa';
     entry.card.querySelector('.profile-route small').textContent = profile.active ? progressAge(profile.lastProgressAt) : '';
+    let plan = entry.card.querySelector('.planner-mobile');
+    if (!plan) {
+      plan = document.createElement('p');
+      plan.className = 'profile-note planner-mobile';
+      entry.card.querySelector('.profile-route').after(plan);
+    }
+    const decision = profile.plannerDecision;
+    plan.hidden = !decision || !profile.active || profile.status === 'paused';
+    plan.textContent = decision ? `${decision.title}. ${decision.reason}` : '';
     const stats = phaseStats(profile, period.value);
     if (profile.phase === 'progression' && profile.level != null) stats.unshift(`Treinador Nv ${profile.level} / 150`);
     if (profile.openListings) stats.push(`${profile.openListings} em anúncio`);

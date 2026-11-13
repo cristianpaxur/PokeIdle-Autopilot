@@ -3,18 +3,28 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101713">
+  <meta name="theme-color" content="#cf3442">
   <title>IdleBot no celular</title>
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/pokedex.css">
+  <script src="/pokedex.js" type="module"></script>
   <script src="/mobile.js" type="module"></script>
 </head>
-<body class="operations monitor">
-  <main class="shell">
+<body class="operations monitor pokedex">
+  <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
+  <header class="topbar">
+    <div class="shell topbar-inner">
+      <div class="brand"><span class="device-lens" aria-hidden="true"></span><span class="device-leds" aria-hidden="true"><i></i><i></i><i></i></span><span class="brand-copy">IdleBot<small>POKÉDEX</small></span></div>
+      <button class="sound-toggle" data-sound-toggle type="button" aria-label="Sons de 8 bits" aria-pressed="true" hidden><span class="sound-icon" aria-hidden="true"></span><span data-sound-label>Som ligado</span></button>
+    </div>
+  </header>
+  <main class="shell" id="main-content" tabindex="-1">
     <div class="hero">
       <div>
         <h1>IdleBot ao vivo</h1>
         <p id="monitor-status" role="status">Conectando ao painel…</p>
       </div>
+      <span class="readonly-label">Somente leitura</span>
     </div>
     <section class="attention-panel" aria-labelledby="monitor-attention-heading">
       <h2 id="monitor-attention-heading">Atenção</h2>
@@ -26,6 +36,7 @@
     </div>
     <section id="monitor-profiles" class="profiles streaming" aria-label="Progresso dos perfis"></section>
   </main>
+  <footer class="shell"><span>IdleBot · monitor do celular</span></footer>
   <template id="monitor-profile">
     <article class="profile">
       <div class="profile-top"><h3></h3><span class="status"></span></div>

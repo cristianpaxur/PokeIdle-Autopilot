@@ -113,6 +113,7 @@ test('opens a specific specimen from the collection and reloads its direct link'
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   t.after(() => browser.close());
   const page = await browser.newPage({ viewport: { width: 400, height: 850 } });
+  await page.route('https://**', (route) => route.abort());
   await page.route('**/api/pokemon-atlas', (route) => route.fulfill({ json: {} }));
   await page.route('**/api/pokemon-sprite/329', (route) => route.fulfill({ json: {
     path: '/assets/asset-packs/outfits/male/329/mock.webp', x: 2, y: 2, w: 64, h: 64, width: 128, height: 128,
@@ -151,6 +152,7 @@ test('sorts the filtered collection numerically before splitting it into pages',
   const browser = await chromium.launch({ channel: 'msedge', headless: true });
   t.after(() => browser.close());
   const page = await browser.newPage({ viewport: { width: 390, height: 850 } });
+  await page.route('https://**', (route) => route.abort());
   await page.route('**/api/pokemon-atlas', (route) => route.fulfill({ json: {} }));
   await page.goto(`${url}/colecao`);
   const names = page.locator('#pokemon-grid .pokemon-card strong');

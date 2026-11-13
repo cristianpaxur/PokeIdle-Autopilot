@@ -3,31 +3,37 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#101713">
+  <meta name="theme-color" content="#cf3442">
   <title>IdleBot | Painel de caça</title>
   <link rel="stylesheet" href="/style.css">
+  <link rel="stylesheet" href="/pokedex.css">
+  <script src="/pokedex.js" type="module"></script>
   <script src="/app.js" type="module"></script>
 </head>
-<body class="operations">
+<body class="operations pokedex">
+  <a class="skip-link" href="#main-content">Ir para o conteúdo</a>
   <header class="topbar">
     <div class="shell topbar-inner">
-      <a href="/" class="brand"><span class="mark" aria-hidden="true">◉</span> IdleBot</a>
+      <a href="/" class="brand"><span class="device-lens" aria-hidden="true"></span><span class="device-leds" aria-hidden="true"><i></i><i></i><i></i></span><span class="brand-copy">IdleBot<small>POKÉDEX</small></span></a>
+      <nav class="dashboard-nav" aria-label="Seções do IdleBot">
+        <a href="/" aria-current="page">Caça</a>
+        <a href="/colecao">Meus Pokémon</a>
+        <a href="/mercado">Mercado</a>
+      </nav>
       <div class="topbar-actions">
-        <button id="mobile-qr" type="button" aria-haspopup="dialog" hidden>QR do celular</button>
-        <button id="mosaic" type="button" aria-pressed="false" hidden>Ver 4 telas</button>
+        <button class="sound-toggle" data-sound-toggle type="button" aria-label="Sons de 8 bits" aria-pressed="true" hidden><span class="sound-icon" aria-hidden="true"></span><span data-sound-label>Som ligado</span></button>
         <div class="connection"><span id="live-dot" class="dot" aria-hidden="true"></span><span id="live" role="status">Conectando</span></div>
       </div>
     </div>
   </header>
-  <main class="shell">
-    <nav class="dashboard-nav" aria-label="Seções do IdleBot">
-      <a href="/" aria-current="page">Caça</a>
-      <a href="/colecao">Meus Pokémon</a>
-      <a href="/mercado">Mercado</a>
-    </nav>
+  <main class="shell" id="main-content" tabindex="-1">
     <section class="hero" aria-labelledby="title">
       <h1 id="title">Central de caça</h1>
-      <button id="start-all" class="primary" type="button">Abrir perfis</button>
+      <div class="hero-actions">
+        <button id="mobile-qr" type="button" aria-haspopup="dialog" hidden>QR do celular</button>
+        <button id="mosaic" type="button" aria-pressed="false" hidden>Ver 4 telas</button>
+        <button id="start-all" class="primary" type="button">Abrir perfis</button>
+      </div>
     </section>
     <p id="feedback" class="feedback" role="status" hidden></p>
 

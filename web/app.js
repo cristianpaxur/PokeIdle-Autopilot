@@ -1,4 +1,5 @@
 import { RemoteScreen } from './remote.js';
+import { attachPlanner, renderPlanner } from './planner.js';
 import { activityConfirmed, phaseLabels, phaseStats, progressAge, renderAttention, watchScreenVisibility } from './profile-summary.js';
 
 const byId = (id) => document.getElementById(id);
@@ -95,6 +96,7 @@ function makeCard(id) {
         <span></span><progress max="150" aria-label="Nível do treinador para liberar Outland"></progress>
       </div>
       <p class="profile-note"></p>
+      <div class="profile-planner" hidden></div>
       <div class="profile-stat phase-stats"></div>
       <details class="hunt-comparison" hidden>
         <summary>XP das hunts</summary>
@@ -156,6 +158,7 @@ function makeCard(id) {
       mode.disabled = ['manual', 'pausing'].includes(profile?.control);
     }
   });
+  attachPlanner(card.querySelector('.profile-planner'), id);
   byId('profiles').append(card);
   cards.set(id, card);
   visibility.observe(card.querySelector('.view'));
@@ -203,6 +206,7 @@ function renderCard(profile) {
   profileNote.textContent = profile.attention?.text ?? profile.note ?? '';
   profileNote.hidden = !profile.attention && !['waiting', 'opening'].includes(profile.status)
     && !(profile.phase === 'shiny' && profile.active && profile.balls === 0);
+  renderPlanner(card.querySelector('.profile-planner'), profile);
   const route = [phaseLabels[profile.phase], profile.hunt?.replaceAll('-', ' ')].filter(Boolean);
   card.querySelector('[data-stat="hunt"]').textContent = route.join(' · ') || 'Sem rota ativa';
   card.querySelector('[data-stat="activity"]').textContent = profile.active ? progressAge(profile.lastProgressAt) : '';
